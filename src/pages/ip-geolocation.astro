@@ -1,0 +1,203 @@
+---
+import ToolLayout from '../components/ToolLayout.astro';
+---
+
+<ToolLayout
+  title="IP Geolocation"
+  description="Geolocalizá cualquier IP pública con mapa interactivo. Detectá tu IP automáticamente."
+  heading="IP Geolocation"
+  subheading="Geolocalizá cualquier IP pública. Incluye mapa, ISP, ASN y zona horaria."
+>
+  <Fragment slot="head">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" is:inline></script>
+  </Fragment>
+
+  <div slot="form">
+    <div class="form-row">
+      <div class="input-group">
+        <label for="ip-input">Dirección IP</label>
+        <input
+          type="text"
+          id="ip-input"
+          placeholder="8.8.8.8"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+      <button class="btn" id="lookup-btn">Buscar</button>
+      <button class="btn btn-secondary" id="detect-btn">Detectar mi IP</button>
+    </div>
+    <div class="loading" id="loading"><div class="spinner"></div> Geolocalizando...</div>
+    <div class="error-msg" id="error"></div>
+  </div>
+
+  <div slot="results">
+    <div id="results-container" style="display:none;">
+      <div class="geo-layout">
+        <div class="geo-info card">
+          <table class="results-table">
+            <tbody>
+              <tr><th>IP</th><td id="r-ip"></td></tr>
+              <tr><th>País</th><td id="r-country"></td></tr>
+              <tr><th>Región</th><td id="r-region"></td></tr>
+              <tr><th>Ciudad</th><td id="r-city"></td></tr>
+              <tr><th>ISP</th><td id="r-isp"></td></tr>
+              <tr><th>Organización</th><td id="r-org"></td></tr>
+              <tr><th>AS</th><td id="r-as"></td></tr>
+              <tr><th>Zona horaria</th><td id="r-tz"></td></tr>
+              <tr><th>Coordenadas</th><td id="r-coords"></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="geo-map card" id="map-container">
+          <div id="map" style="height:350px;border-radius:10px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</ToolLayout>
+
+<style>
+  .form-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+  }
+
+  .input-group {
+    flex: 1;
+  }
+
+  .geo-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+
+  .geo-info {
+    overflow: hidden;
+  }
+
+  .geo-info:hover,
+  .geo-map:hover {
+    transform: none;
+  }
+
+  .geo-map {
+    padding: 0.5rem;
+  }
+
+  .results-table th {
+    width: 120px;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 768px) {
+    .form-row {
+      flex-wrap: wrap;
+    }
+
+    .input-group {
+      flex: 1 1 100%;
+    }
+
+    .form-row .btn {
+      flex: 1;
+    }
+
+    .geo-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script is:inline>
+  var map = null;
+  var marker = null;
+
+  var ipInput = document.getElementById('ip-input');
+  var lookupBtn = document.getElementById('lookup-btn');
+  var detectBtn = document.getElementById('detect-btn');
+  var loading = document.getElementById('loading');
+  var error = document.getElementById('error');
+  var container = document.getElementById('results-container');
+
+  function geoLookup(ip) {
+    error.classList.remove('active');
+    container.style.display = 'none';
+    loading.classList.add('active');
+
+    var url = ip ? '/api/geoip?ip=' + encodeURIComponent(ip) : '/api/geoip';
+
+    fetch(url)
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        loading.classList.remove('active');
+
+        if (data.error) {
+          error.textContent = data.error;
+          error.classList.add('active');
+          return;
+        }
+
+        document.getElementById('r-ip').textContent = data.ip;
+        document.getElementById('r-country').textContent = data.country + ' (' + data.countryCode + ')';
+        document.getElementById('r-region').textContent = data.region;
+        document.getElementById('r-city').textContent = data.city;
+        document.getElementById('r-isp').textContent = data.isp;
+        document.getElementById('r-org').textContent = data.org;
+        document.getElementById('r-as').textContent = data.as;
+        document.getElementById('r-tz').textContent = data.timezone;
+        document.getElementById('r-coords').textContent = data.lat + ', ' + data.lon;
+
+        ipInput.value = data.ip;
+        container.style.display = 'block';
+
+        // Init or update map
+        if (!map) {
+          map = L.map('map').setView([data.lat, data.lon], 10);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap',
+            maxZoom: 18,
+          }).addTo(map);
+        } else {
+          map.setView([data.lat, data.lon], 10);
+        }
+
+        if (marker) map.removeLayer(marker);
+        marker = L.marker([data.lat, data.lon]).addTo(map)
+          .bindPopup(data.city + ', ' + data.country).openPopup();
+
+        // Force map resize after container becomes visible
+        setTimeout(function() { map.invalidateSize(); }, 100);
+      })
+      .catch(function() {
+        loading.classList.remove('active');
+        error.textContent = 'Error de conexión. Intentá de nuevo.';
+        error.classList.add('active');
+      });
+  }
+
+  lookupBtn.addEventListener('click', function() {
+    var ip = ipInput.value.trim();
+    if (!ip) {
+      error.textContent = 'Ingresá una dirección IP.';
+      error.classList.add('active');
+      return;
+    }
+    geoLookup(ip);
+  });
+
+  detectBtn.addEventListener('click', function() {
+    geoLookup(null);
+  });
+
+  ipInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      var ip = ipInput.value.trim();
+      if (ip) geoLookup(ip);
+      else geoLookup(null);
+    }
+  });
+</script>

@@ -1,0 +1,174 @@
+---
+import ToolLayout from '../components/ToolLayout.astro';
+---
+
+<ToolLayout
+  title="DNS Lookup"
+  description="Consultá registros DNS de cualquier dominio: A, AAAA, MX, TXT, CNAME, NS, SOA, PTR, SRV."
+  heading="DNS Lookup"
+  subheading="Consultá los registros DNS de cualquier dominio usando Cloudflare DoH."
+>
+  <div slot="form">
+    <div class="form-row">
+      <div class="input-group">
+        <label for="domain-input">Dominio</label>
+        <input
+          type="text"
+          id="domain-input"
+          placeholder="ejemplo.com"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+      <div class="input-group type-group">
+        <label for="type-select">Tipo</label>
+        <select id="type-select">
+          <option value="A">A</option>
+          <option value="AAAA">AAAA</option>
+          <option value="MX">MX</option>
+          <option value="TXT">TXT</option>
+          <option value="CNAME">CNAME</option>
+          <option value="NS">NS</option>
+          <option value="SOA">SOA</option>
+          <option value="PTR">PTR</option>
+          <option value="SRV">SRV</option>
+        </select>
+      </div>
+      <button class="btn" id="lookup-btn">Consultar</button>
+    </div>
+    <div class="loading" id="loading"><div class="spinner"></div> Consultando DNS...</div>
+    <div class="error-msg" id="error"></div>
+  </div>
+
+  <div slot="results">
+    <div class="results-card card" id="results-card" style="display:none;">
+      <div class="results-meta" id="results-meta"></div>
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Tipo</th>
+            <th>TTL</th>
+            <th>Valor</th>
+          </tr>
+        </thead>
+        <tbody id="results-body"></tbody>
+      </table>
+    </div>
+  </div>
+</ToolLayout>
+
+<style>
+  .form-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+  }
+
+  .input-group {
+    flex: 1;
+  }
+
+  .type-group {
+    flex: 0 0 120px;
+  }
+
+  .results-meta {
+    padding: 0.75rem 1rem;
+    font-size: 0.82rem;
+    color: var(--gris-medio);
+    border-bottom: 1px solid var(--borde);
+  }
+
+  .results-card {
+    overflow: hidden;
+  }
+
+  @media (max-width: 600px) {
+    .form-row {
+      flex-direction: column;
+    }
+
+    .type-group {
+      flex: auto;
+    }
+
+    .form-row .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+
+<script>
+  const domainInput = document.getElementById('domain-input') as HTMLInputElement;
+  const typeSelect = document.getElementById('type-select') as HTMLSelectElement;
+  const btn = document.getElementById('lookup-btn')!;
+  const loading = document.getElementById('loading')!;
+  const error = document.getElementById('error')!;
+  const card = document.getElementById('results-card')!;
+  const meta = document.getElementById('results-meta')!;
+  const tbody = document.getElementById('results-body')!;
+
+  async function lookup() {
+    const domain = domainInput.value.trim();
+    const type = typeSelect.value;
+
+    error.classList.remove('active');
+    card.style.display = 'none';
+    loading.classList.add('active');
+
+    if (!domain) {
+      loading.classList.remove('active');
+      error.textContent = 'Ingresá un dominio.';
+      error.classList.add('active');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/dns?domain=${encodeURIComponent(domain)}&type=${type}`);
+      const data = await res.json();
+
+      loading.classList.remove('active');
+
+      if (data.error) {
+        error.textContent = data.error;
+        error.classList.add('active');
+        return;
+      }
+
+      if (!data.records || data.records.length === 0) {
+        error.textContent = `No se encontraron registros ${type} para ${domain}.`;
+        error.classList.add('active');
+        return;
+      }
+
+      meta.textContent = `${data.records.length} registro(s) encontrado(s) — ${data.queryTime}ms`;
+      tbody.innerHTML = data.records.map((r: any) => `
+        <tr>
+          <td><code>${esc(r.name)}</code></td>
+          <td>${esc(r.type)}</td>
+          <td>${r.TTL}s</td>
+          <td><code>${esc(r.data)}</code></td>
+        </tr>
+      `).join('');
+
+      card.style.display = 'block';
+    } catch {
+      loading.classList.remove('active');
+      error.textContent = 'Error de conexión. Intentá de nuevo.';
+      error.classList.add('active');
+    }
+  }
+
+  function esc(s: string): string {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  btn.addEventListener('click', lookup);
+  domainInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') lookup();
+  });
+</script>

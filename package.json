@@ -1,0 +1,16 @@
+{
+  "name": "delzo-tools",
+  "version": "1.0.0",
+  "description": "Herramientas de networking gratuitas — delzo.cloud",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "deploy": "astro build && wrangler deploy"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^12.6.12",
+    "astro": "^5.18.0"
+  }
+}

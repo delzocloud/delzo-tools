@@ -1,0 +1,7 @@
+{
+  "name": "delzo-tools",
+  "compatibility_date": "2025-01-01",
+  "routes": [
+    { "pattern": "tools.delzo.cloud", "custom_domain": true }
+  ]
+}

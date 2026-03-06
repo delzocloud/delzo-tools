@@ -1,0 +1,186 @@
+---
+const tools = [
+  { name: 'DNS Lookup', href: '/dns-lookup' },
+  { name: 'Email Auth', href: '/email-auth' },
+  { name: 'CIDR Calculator', href: '/cidr-calculator' },
+  { name: 'IP Geolocation', href: '/ip-geolocation' },
+];
+
+const currentPath = Astro.url.pathname;
+---
+
+<header class="header" id="header">
+  <div class="container header-inner">
+    <a href="/" class="wordmark">
+      <span class="wordmark-delzo">delzo</span><span class="wordmark-cloud">.cloud</span>
+      <span class="wordmark-sep">/</span>
+      <span class="wordmark-tools">tools</span>
+    </a>
+
+    <button class="hamburger" id="hamburger" aria-label="Menú">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav class="nav" id="nav">
+      {tools.map(tool => (
+        <a
+          href={tool.href}
+          class:list={['nav-link', { active: currentPath === tool.href }]}
+        >
+          {tool.name}
+        </a>
+      ))}
+    </nav>
+  </div>
+</header>
+
+<style>
+  .header {
+    padding: 0.75rem 0;
+    position: sticky;
+    top: 0;
+    background: rgba(248, 250, 249, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    z-index: 100;
+    border-bottom: 1px solid var(--borde);
+  }
+
+  .header-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .wordmark {
+    font-size: 1.15rem;
+    text-decoration: none;
+    letter-spacing: -0.03em;
+    display: flex;
+    align-items: baseline;
+    gap: 0;
+  }
+
+  .wordmark-delzo {
+    font-weight: 700;
+    color: var(--gris-oscuro);
+  }
+
+  .wordmark-cloud {
+    font-weight: 400;
+    color: var(--verde);
+  }
+
+  .wordmark-sep {
+    color: var(--gris-claro);
+    margin: 0 0.3rem;
+    font-weight: 300;
+  }
+
+  .wordmark-tools {
+    font-weight: 500;
+    color: var(--gris-medio);
+  }
+
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+  }
+
+  .nav-link {
+    text-decoration: none;
+    color: var(--gris-medio);
+    font-size: 0.88rem;
+    font-weight: 500;
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+
+  .nav-link:hover {
+    color: var(--gris-oscuro);
+    background: rgba(16, 185, 129, 0.06);
+  }
+
+  .nav-link.active {
+    color: var(--verde-dark);
+    background: rgba(16, 185, 129, 0.08);
+  }
+
+  .hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 36px;
+    height: 36px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    z-index: 110;
+  }
+
+  .hamburger span {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background: var(--gris-oscuro);
+    border-radius: 2px;
+    transition: all 0.3s var(--ease-out-expo);
+    transform-origin: center;
+  }
+
+  .hamburger.is-active span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+  }
+
+  .hamburger.is-active span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .hamburger.is-active span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+
+  @media (max-width: 768px) {
+    .hamburger {
+      display: flex;
+    }
+
+    .nav {
+      position: fixed;
+      inset: 0;
+      background: rgba(248, 250, 249, 0.97);
+      backdrop-filter: blur(20px);
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      z-index: 105;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .nav.nav-open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .nav-link {
+      font-size: 1.25rem;
+      padding: 0.75rem 1.5rem;
+    }
+  }
+</style>
+
+<script>
+  const hamburger = document.getElementById('hamburger');
+  const nav = document.getElementById('nav');
+  hamburger?.addEventListener('click', () => {
+    hamburger.classList.toggle('is-active');
+    nav?.classList.toggle('nav-open');
+  });
+</script>

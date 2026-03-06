@@ -1,0 +1,110 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import ToolCard from '../components/ToolCard.astro';
+
+const tools = [
+  {
+    title: 'DNS Lookup',
+    description: 'Consultá registros DNS de cualquier dominio: A, AAAA, MX, TXT, CNAME, NS, SOA, PTR, SRV.',
+    href: '/dns-lookup',
+    icon: '🔍',
+  },
+  {
+    title: 'Email Auth Analyzer',
+    description: 'Analizá SPF, DMARC y DKIM de un dominio. Detectá problemas de autenticación de email.',
+    href: '/email-auth',
+    icon: '📧',
+  },
+  {
+    title: 'CIDR Calculator',
+    description: 'Calculá red, broadcast, máscara, rango de hosts y cantidad de IPs utilizables.',
+    href: '/cidr-calculator',
+    icon: '🧮',
+  },
+  {
+    title: 'IP Geolocation',
+    description: 'Geolocalizá cualquier IP pública. Detectá tu IP automáticamente con mapa interactivo.',
+    href: '/ip-geolocation',
+    icon: '🌐',
+  },
+];
+---
+
+<BaseLayout
+  title="Herramientas de Networking Gratuitas"
+  description="Herramientas gratuitas de DNS, email, redes e IP para profesionales IT. Por delzo.cloud."
+>
+  <Header />
+  <main>
+    <section class="hero">
+      <div class="container">
+        <h1>Herramientas de networking <span class="text-gradient">gratuitas</span></h1>
+        <p class="hero-sub">DNS, email, redes e IP — todo en un solo lugar. Sin registro, sin límites.</p>
+      </div>
+    </section>
+    <section class="tools-section">
+      <div class="container">
+        <div class="tools-grid">
+          {tools.map(tool => (
+            <ToolCard
+              title={tool.title}
+              description={tool.description}
+              href={tool.href}
+              icon={tool.icon}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  </main>
+  <Footer />
+</BaseLayout>
+
+<style>
+  .hero {
+    padding: 4rem 0 3rem;
+    text-align: center;
+  }
+
+  .hero h1 {
+    font-size: 2.5rem;
+    letter-spacing: -0.04em;
+    margin-bottom: 0.75rem;
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, var(--verde) 0%, #0D9468 50%, var(--turquesa) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    font-size: 1.15rem;
+    color: var(--gris-medio);
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .tools-section {
+    padding: 0 0 4rem;
+  }
+
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+
+  @media (max-width: 600px) {
+    .hero h1 {
+      font-size: 1.85rem;
+    }
+
+    .tools-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

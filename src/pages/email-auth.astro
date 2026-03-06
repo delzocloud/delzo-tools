@@ -1,0 +1,264 @@
+---
+import ToolLayout from '../components/ToolLayout.astro';
+---
+
+<ToolLayout
+  title="Email Auth Analyzer"
+  description="Analizá SPF, DMARC y DKIM de cualquier dominio. Detectá problemas de autenticación de email."
+  heading="Email Auth Analyzer"
+  subheading="Analizá la autenticación de email (SPF, DMARC, DKIM) de cualquier dominio."
+>
+  <div slot="form">
+    <div class="form-row">
+      <div class="input-group">
+        <label for="domain-input">Dominio</label>
+        <input
+          type="text"
+          id="domain-input"
+          placeholder="ejemplo.com"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+      <button class="btn" id="analyze-btn">Analizar</button>
+    </div>
+    <div class="loading" id="loading"><div class="spinner"></div> Analizando autenticación de email...</div>
+    <div class="error-msg" id="error"></div>
+  </div>
+
+  <div slot="results" id="results-container" style="display:none;">
+    <div class="auth-sections">
+      <!-- SPF -->
+      <div class="auth-section card">
+        <div class="auth-header">
+          <h3>SPF</h3>
+          <span class="badge" id="spf-badge"></span>
+        </div>
+        <p class="auth-details" id="spf-details"></p>
+        <div class="auth-record" id="spf-record-wrap" style="display:none;">
+          <label>Registro</label>
+          <code id="spf-record"></code>
+        </div>
+        <div class="auth-rec">
+          <strong>Recomendación:</strong>
+          <p id="spf-recommendation"></p>
+        </div>
+      </div>
+
+      <!-- DMARC -->
+      <div class="auth-section card">
+        <div class="auth-header">
+          <h3>DMARC</h3>
+          <span class="badge" id="dmarc-badge"></span>
+        </div>
+        <p class="auth-details" id="dmarc-details"></p>
+        <div class="auth-record" id="dmarc-record-wrap" style="display:none;">
+          <label>Registro</label>
+          <code id="dmarc-record"></code>
+        </div>
+        <div class="auth-rec">
+          <strong>Recomendación:</strong>
+          <p id="dmarc-recommendation"></p>
+        </div>
+      </div>
+
+      <!-- DKIM -->
+      <div class="auth-section card">
+        <div class="auth-header">
+          <h3>DKIM</h3>
+          <span class="badge" id="dkim-badge"></span>
+        </div>
+        <p class="auth-details" id="dkim-details"></p>
+        <div class="auth-record" id="dkim-record-wrap" style="display:none;">
+          <label>Registro</label>
+          <code id="dkim-record"></code>
+        </div>
+        <div class="auth-rec">
+          <strong>Recomendación:</strong>
+          <p id="dkim-recommendation"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</ToolLayout>
+
+<style>
+  .form-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+  }
+
+  .input-group {
+    flex: 1;
+  }
+
+  .auth-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .auth-section {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .auth-section:hover {
+    transform: none;
+  }
+
+  .auth-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .auth-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .auth-details {
+    font-size: 0.92rem;
+    color: var(--gris-oscuro);
+    margin-bottom: 0.75rem;
+  }
+
+  .auth-record {
+    margin-bottom: 0.75rem;
+  }
+
+  .auth-record label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--gris-medio);
+    margin-bottom: 0.3rem;
+  }
+
+  .auth-record code {
+    display: block;
+    background: var(--fondo-alt);
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    word-break: break-all;
+    line-height: 1.5;
+  }
+
+  .auth-rec {
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--borde);
+  }
+
+  .auth-rec strong {
+    font-size: 0.82rem;
+    color: var(--gris-oscuro);
+  }
+
+  .auth-rec p {
+    font-size: 0.88rem;
+    margin-top: 0.2rem;
+  }
+
+  @media (max-width: 480px) {
+    .form-row {
+      flex-direction: column;
+    }
+
+    .form-row .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+
+<script>
+  const domainInput = document.getElementById('domain-input') as HTMLInputElement;
+  const btn = document.getElementById('analyze-btn')!;
+  const loading = document.getElementById('loading')!;
+  const error = document.getElementById('error')!;
+  const container = document.getElementById('results-container')!;
+
+  function setBadge(id: string, status: string) {
+    const badge = document.getElementById(id)!;
+    const labels: Record<string, string> = { pass: '✓ Pass', warning: '⚠ Warning', fail: '✗ Fail' };
+    badge.textContent = labels[status] || status;
+    badge.className = `badge badge-${status}`;
+  }
+
+  async function analyze() {
+    const domain = domainInput.value.trim();
+
+    error.classList.remove('active');
+    container.style.display = 'none';
+    loading.classList.add('active');
+
+    if (!domain) {
+      loading.classList.remove('active');
+      error.textContent = 'Ingresá un dominio.';
+      error.classList.add('active');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/email-auth?domain=${encodeURIComponent(domain)}`);
+      const data = await res.json();
+
+      loading.classList.remove('active');
+
+      if (data.error) {
+        error.textContent = data.error;
+        error.classList.add('active');
+        return;
+      }
+
+      // SPF
+      setBadge('spf-badge', data.spf.status);
+      document.getElementById('spf-details')!.textContent = data.spf.details;
+      document.getElementById('spf-recommendation')!.textContent = data.spf.recommendation;
+      const spfWrap = document.getElementById('spf-record-wrap')!;
+      if (data.spf.record) {
+        document.getElementById('spf-record')!.textContent = data.spf.record;
+        spfWrap.style.display = 'block';
+      } else {
+        spfWrap.style.display = 'none';
+      }
+
+      // DMARC
+      setBadge('dmarc-badge', data.dmarc.status);
+      document.getElementById('dmarc-details')!.textContent = data.dmarc.details;
+      document.getElementById('dmarc-recommendation')!.textContent = data.dmarc.recommendation;
+      const dmarcWrap = document.getElementById('dmarc-record-wrap')!;
+      if (data.dmarc.record) {
+        document.getElementById('dmarc-record')!.textContent = data.dmarc.record;
+        dmarcWrap.style.display = 'block';
+      } else {
+        dmarcWrap.style.display = 'none';
+      }
+
+      // DKIM
+      setBadge('dkim-badge', data.dkim.status);
+      document.getElementById('dkim-details')!.textContent = data.dkim.details;
+      document.getElementById('dkim-recommendation')!.textContent = data.dkim.recommendation;
+      const dkimWrap = document.getElementById('dkim-record-wrap')!;
+      if (data.dkim.record) {
+        document.getElementById('dkim-record')!.textContent = data.dkim.record;
+        dkimWrap.style.display = 'block';
+      } else {
+        dkimWrap.style.display = 'none';
+      }
+
+      container.style.display = 'block';
+    } catch {
+      loading.classList.remove('active');
+      error.textContent = 'Error de conexión. Intentá de nuevo.';
+      error.classList.add('active');
+    }
+  }
+
+  btn.addEventListener('click', analyze);
+  domainInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') analyze();
+  });
+</script>
