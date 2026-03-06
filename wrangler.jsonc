@@ -1,6 +1,13 @@
 {
   "name": "delzo-tools",
+  "account_id": "4464414528d4aefa8c1f2c1368e07278",
   "compatibility_date": "2025-01-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "dist/_worker.js",
+  "assets": {
+    "directory": "dist",
+    "binding": "ASSETS"
+  },
   "routes": [
     { "pattern": "tools.delzo.cloud", "custom_domain": true }
   ]
