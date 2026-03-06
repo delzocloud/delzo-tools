@@ -1,6 +1,6 @@
 {
+  // account_id via env var: CLOUDFLARE_ACCOUNT_ID
   "name": "delzo-tools",
-  "account_id": "4464414528d4aefa8c1f2c1368e07278",
   "compatibility_date": "2025-01-01",
   "compatibility_flags": ["nodejs_compat"],
   "main": "dist/_worker.js",
