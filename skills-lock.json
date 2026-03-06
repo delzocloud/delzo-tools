@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "astro": {
+      "source": "astrolicious/agent-skills",
+      "sourceType": "github",
+      "computedHash": "ab44e2f297b232ff433e219664ee7df199bd8dd1dff4b8ee42408b880e8d7359"
+    },
+    "seo-content-strategist": {
+      "source": "ncklrs/startup-os-skills",
+      "sourceType": "github",
+      "computedHash": "a45d85df8a6fd2717947150ef985d35a4638d5086366083cf2d498f4399fe006"
+    }
+  }
+}

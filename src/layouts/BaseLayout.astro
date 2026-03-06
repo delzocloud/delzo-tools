@@ -5,6 +5,8 @@ interface Props {
 }
 
 const { title, description } = Astro.props;
+
+import '../styles/global.css';
 ---
 
 <!DOCTYPE html>
@@ -24,7 +26,3 @@ const { title, description } = Astro.props;
   <slot />
 </body>
 </html>
-
-<style is:global>
-  @import '../styles/global.css';
-</style>

@@ -35,11 +35,11 @@ export async function analyzeSpf(domain: string): Promise<SpfResult> {
       details = 'Registro SPF con hard fail (-all). Configuración estricta.';
     }
 
-    const includes = (spfRecord.match(/include:/g) || []).length;
-    if (includes > 10) {
+    const lookups = (spfRecord.match(/\b(include:|a:|a\b|mx:|mx\b|ptr:|ptr\b|exists:|redirect=)/g) || []).length;
+    if (lookups > 10) {
       status = 'warning';
-      details += ` Atención: ${includes} lookups DNS (máximo recomendado: 10).`;
-      recommendation = 'Reducí la cantidad de "include:" para no exceder el límite de 10 lookups DNS.';
+      details += ` Atención: ~${lookups} lookups DNS (máximo permitido: 10).`;
+      recommendation = 'Reducí la cantidad de mecanismos DNS (include, a, mx, ptr, exists, redirect) para no exceder el límite de 10 lookups.';
     }
 
     return { status, record: spfRecord, details, recommendation };
@@ -107,24 +107,25 @@ export async function analyzeDmarc(domain: string): Promise<DmarcResult> {
 export async function analyzeDkim(domain: string): Promise<DkimResult> {
   const selectors = ['google', 'default', 'selector1', 'selector2', 'dkim', 'mail', 'k1'];
 
-  for (const selector of selectors) {
-    try {
+  const results = await Promise.allSettled(
+    selectors.map(async (selector) => {
       const data = await queryDns(`${selector}._domainkey.${domain}`, 'TXT');
       const dkimRecord = (data.Answer || [])
         .map(r => r.data.replace(/^"|"$/g, ''))
         .find(d => d.includes('v=DKIM1') || d.includes('p='));
+      return { selector, record: dkimRecord };
+    })
+  );
 
-      if (dkimRecord) {
-        return {
-          status: 'pass',
-          record: dkimRecord,
-          selector,
-          details: `Registro DKIM encontrado con selector "${selector}".`,
-          recommendation: 'Tu DKIM está configurado correctamente.',
-        };
-      }
-    } catch {
-      continue;
+  for (const result of results) {
+    if (result.status === 'fulfilled' && result.value.record) {
+      return {
+        status: 'pass' as const,
+        record: result.value.record,
+        selector: result.value.selector,
+        details: `Registro DKIM encontrado con selector "${result.value.selector}".`,
+        recommendation: 'Tu DKIM está configurado correctamente.',
+      };
     }
   }
 
