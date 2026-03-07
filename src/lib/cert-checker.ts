@@ -28,7 +28,7 @@ export interface CertsResult {
 
 export async function fetchCertificates(domain: string, includeExpired: boolean): Promise<CertsResult> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), 30000);
 
   const crtUrl = `https://crt.sh/?q=${encodeURIComponent(domain)}&output=json`;
   const res = await fetch(crtUrl, {

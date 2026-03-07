@@ -22,7 +22,7 @@ export const GET: APIRoute = async ({ url }) => {
     return json(result);
   } catch (err: any) {
     if (err.name === 'AbortError') {
-      return json({ error: 'Timeout: crt.sh no respondió en 15 segundos.' }, 504);
+      return json({ error: 'Timeout: crt.sh no respondió. Este servicio externo puede estar lento, intentá de nuevo en unos minutos.' }, 504);
     }
     return json({ error: err.message || 'Error al consultar certificados.' }, 500);
   }
