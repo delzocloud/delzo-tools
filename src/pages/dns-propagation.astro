@@ -1,0 +1,223 @@
+---
+import ToolLayout from '../components/ToolLayout.astro';
+---
+
+<ToolLayout
+  title="DNS Propagation Checker"
+  description="Verificá la propagación DNS de un dominio consultando 8 resolvers públicos en paralelo."
+  heading="DNS Propagation Checker"
+  subheading="Consultá un dominio contra 8 resolvers DNS públicos para verificar propagación."
+>
+  <div slot="form">
+    <div class="form-row">
+      <div class="input-group">
+        <label for="domain-input">Dominio</label>
+        <input
+          type="text"
+          id="domain-input"
+          placeholder="ejemplo.com"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+      <div class="input-group type-group">
+        <label for="type-select">Tipo</label>
+        <select id="type-select">
+          <option value="A">A</option>
+          <option value="AAAA">AAAA</option>
+          <option value="MX">MX</option>
+          <option value="TXT">TXT</option>
+          <option value="CNAME">CNAME</option>
+          <option value="NS">NS</option>
+        </select>
+      </div>
+      <button class="btn" id="check-btn">Consultar</button>
+    </div>
+    <div class="loading" id="loading"><div class="spinner"></div> Consultando resolvers...</div>
+    <div class="error-msg" id="error"></div>
+  </div>
+
+  <div slot="results">
+    <div id="status-banner" style="display:none;"></div>
+    <div class="results-card card" id="results-card" style="display:none;">
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th>Resolver</th>
+            <th>Respuesta</th>
+            <th>Tiempo</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="results-body"></tbody>
+      </table>
+    </div>
+  </div>
+</ToolLayout>
+
+<style>
+  .form-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+  }
+
+  .input-group {
+    flex: 1;
+  }
+
+  .type-group {
+    flex: 0 0 120px;
+  }
+
+  .results-card {
+    overflow: hidden;
+  }
+
+  .status-banner {
+    padding: 0.85rem 1rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.92rem;
+    margin-bottom: 1rem;
+  }
+
+  .banner-ok {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+
+  .banner-warn {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+  }
+
+  .badge-ok {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+  }
+
+  .badge-err {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+  }
+
+  .badge-timeout {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+  }
+
+  @media (max-width: 600px) {
+    .form-row {
+      flex-direction: column;
+    }
+
+    .type-group {
+      flex: auto;
+    }
+
+    .form-row .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+
+<script>
+  const domainInput = document.getElementById('domain-input') as HTMLInputElement;
+  const typeSelect = document.getElementById('type-select') as HTMLSelectElement;
+  const btn = document.getElementById('check-btn')!;
+  const loading = document.getElementById('loading')!;
+  const error = document.getElementById('error')!;
+  const banner = document.getElementById('status-banner')!;
+  const card = document.getElementById('results-card')!;
+  const tbody = document.getElementById('results-body')!;
+
+  async function check() {
+    const domain = domainInput.value.trim();
+    const type = typeSelect.value;
+
+    error.classList.remove('active');
+    card.style.display = 'none';
+    banner.style.display = 'none';
+    loading.classList.add('active');
+
+    if (!domain) {
+      loading.classList.remove('active');
+      error.textContent = 'Ingresá un dominio.';
+      error.classList.add('active');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/dns-propagation?domain=${encodeURIComponent(domain)}&type=${type}`);
+      const data = await res.json();
+
+      loading.classList.remove('active');
+
+      if (data.error) {
+        error.textContent = data.error;
+        error.classList.add('active');
+        return;
+      }
+
+      if (data.consistent) {
+        banner.className = 'status-banner banner-ok';
+        banner.textContent = 'Propagación completa — todos los resolvers coinciden';
+      } else {
+        banner.className = 'status-banner banner-warn';
+        banner.textContent = 'Inconsistencia detectada — los resolvers no coinciden';
+      }
+      banner.style.display = 'block';
+
+      tbody.innerHTML = data.resolvers.map((r: any) => {
+        const answers = r.answers.length > 0 ? r.answers.map((a: string) => '<code>' + esc(a) + '</code>').join('<br>') : '—';
+        let badge = '';
+        if (r.status === 'ok') badge = '<span class="badge-ok">OK</span>';
+        else if (r.status === 'timeout') badge = '<span class="badge-timeout">Timeout</span>';
+        else badge = '<span class="badge-err">Error</span>';
+
+        return `<tr>
+          <td><strong>${esc(r.name)}</strong></td>
+          <td>${answers}</td>
+          <td>${r.responseTime}ms</td>
+          <td>${badge}</td>
+        </tr>`;
+      }).join('');
+
+      card.style.display = 'block';
+    } catch {
+      loading.classList.remove('active');
+      error.textContent = 'Error de conexión. Intentá de nuevo.';
+      error.classList.add('active');
+    }
+  }
+
+  function esc(s: string): string {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  btn.addEventListener('click', check);
+  domainInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') check();
+  });
+</script>

@@ -1,0 +1,215 @@
+---
+import ToolLayout from '../components/ToolLayout.astro';
+---
+
+<ToolLayout
+  title="MX Routing Analyzer"
+  description="Analizá los registros MX de un dominio: prioridades, proveedor, redundancia e IPs."
+  heading="MX Routing Analyzer"
+  subheading="Analizá los servidores MX de un dominio, detectá el proveedor y evaluá la redundancia."
+>
+  <div slot="form">
+    <div class="form-row">
+      <div class="input-group">
+        <label for="domain-input">Dominio</label>
+        <input
+          type="text"
+          id="domain-input"
+          placeholder="ejemplo.com"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+      <button class="btn" id="check-btn">Analizar</button>
+    </div>
+    <div class="loading" id="loading"><div class="spinner"></div> Analizando MX...</div>
+    <div class="error-msg" id="error"></div>
+  </div>
+
+  <div slot="results">
+    <div id="analysis-card" class="card" style="display:none;">
+      <div class="analysis-grid" id="analysis-grid"></div>
+    </div>
+    <div class="results-card card" id="results-card" style="display:none;">
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th>Prioridad</th>
+            <th>Hostname</th>
+            <th>IPs</th>
+            <th>Proveedor</th>
+          </tr>
+        </thead>
+        <tbody id="results-body"></tbody>
+      </table>
+    </div>
+  </div>
+</ToolLayout>
+
+<style>
+  .form-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+  }
+
+  .input-group {
+    flex: 1;
+  }
+
+  .results-card {
+    overflow: hidden;
+  }
+
+  .analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    padding: 1.25rem;
+  }
+
+  .analysis-item {
+    text-align: center;
+  }
+
+  .analysis-label {
+    font-size: 0.78rem;
+    color: var(--gris-medio);
+    margin-bottom: 0.25rem;
+  }
+
+  .analysis-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gris-oscuro);
+  }
+
+  .analysis-detail {
+    grid-column: 1 / -1;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--borde);
+    font-size: 0.88rem;
+    color: var(--gris-medio);
+    text-align: center;
+  }
+
+  .badge-provider {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: rgba(99, 102, 241, 0.1);
+    color: #4f46e5;
+  }
+
+  .redundancy-yes {
+    color: #059669;
+  }
+
+  .redundancy-no {
+    color: #d97706;
+  }
+
+  @media (max-width: 600px) {
+    .form-row {
+      flex-direction: column;
+    }
+
+    .form-row .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .analysis-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  const domainInput = document.getElementById('domain-input') as HTMLInputElement;
+  const btn = document.getElementById('check-btn')!;
+  const loading = document.getElementById('loading')!;
+  const error = document.getElementById('error')!;
+  const analysisCard = document.getElementById('analysis-card')!;
+  const analysisGrid = document.getElementById('analysis-grid')!;
+  const card = document.getElementById('results-card')!;
+  const tbody = document.getElementById('results-body')!;
+
+  async function check() {
+    const domain = domainInput.value.trim();
+
+    error.classList.remove('active');
+    card.style.display = 'none';
+    analysisCard.style.display = 'none';
+    loading.classList.add('active');
+
+    if (!domain) {
+      loading.classList.remove('active');
+      error.textContent = 'Ingresá un dominio.';
+      error.classList.add('active');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/mx-analyzer?domain=${encodeURIComponent(domain)}`);
+      const data = await res.json();
+
+      loading.classList.remove('active');
+
+      if (data.error) {
+        error.textContent = data.error;
+        error.classList.add('active');
+        return;
+      }
+
+      const a = data.analysis;
+      const redundancyClass = a.hasRedundancy ? 'redundancy-yes' : 'redundancy-no';
+      const redundancyText = a.hasRedundancy ? 'Sí' : 'No';
+
+      analysisGrid.innerHTML = `
+        <div class="analysis-item">
+          <div class="analysis-label">Proveedor</div>
+          <div class="analysis-value">${esc(a.provider)}</div>
+        </div>
+        <div class="analysis-item">
+          <div class="analysis-label">Servidores MX</div>
+          <div class="analysis-value">${a.totalMx}</div>
+        </div>
+        <div class="analysis-item">
+          <div class="analysis-label">Redundancia</div>
+          <div class="analysis-value ${redundancyClass}">${redundancyText}</div>
+        </div>
+        <div class="analysis-detail">${esc(a.details)}</div>
+      `;
+      analysisCard.style.display = 'block';
+
+      tbody.innerHTML = data.mxRecords.map((r: any) => `
+        <tr>
+          <td><strong>${r.priority}</strong></td>
+          <td><code>${esc(r.hostname)}</code></td>
+          <td>${r.ips.length > 0 ? r.ips.map((ip: string) => '<code>' + esc(ip) + '</code>').join('<br>') : '—'}</td>
+          <td><span class="badge-provider">${esc(r.provider)}</span></td>
+        </tr>
+      `).join('');
+
+      card.style.display = 'block';
+    } catch {
+      loading.classList.remove('active');
+      error.textContent = 'Error de conexión. Intentá de nuevo.';
+      error.classList.add('active');
+    }
+  }
+
+  function esc(s: string): string {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  btn.addEventListener('click', check);
+  domainInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') check();
+  });
+</script>

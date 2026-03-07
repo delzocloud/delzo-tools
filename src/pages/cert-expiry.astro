@@ -1,0 +1,214 @@
+---
+import ToolLayout from '../components/ToolLayout.astro';
+---
+
+<ToolLayout
+  title="Multi-domain Cert Expiry"
+  description="Verificá la expiración de certificados SSL/TLS de múltiples dominios a la vez."
+  heading="Multi-domain Cert Expiry"
+  subheading="Ingresá hasta 10 dominios y visualizá sus certificados ordenados por expiración."
+>
+  <div slot="form">
+    <div class="form-col">
+      <div class="input-group">
+        <label for="domains-input">Dominios (uno por línea, máx. 10)</label>
+        <textarea
+          id="domains-input"
+          rows="5"
+          placeholder="ejemplo.com&#10;google.com&#10;github.com"
+          spellcheck="false"
+        ></textarea>
+      </div>
+      <button class="btn" id="check-btn">Verificar</button>
+    </div>
+    <div class="loading" id="loading"><div class="spinner"></div> Consultando certificados...</div>
+    <div class="error-msg" id="error"></div>
+  </div>
+
+  <div slot="results">
+    <div class="results-card card" id="results-card" style="display:none;">
+      <div class="results-meta" id="results-meta"></div>
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th>Dominio</th>
+            <th>CN</th>
+            <th>Emisor</th>
+            <th>Vence</th>
+            <th>Días</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="results-body"></tbody>
+      </table>
+    </div>
+  </div>
+</ToolLayout>
+
+<style>
+  .form-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .input-group {
+    flex: 1;
+  }
+
+  textarea {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--borde);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    resize: vertical;
+    background: white;
+  }
+
+  textarea:focus {
+    outline: none;
+    border-color: var(--verde);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  }
+
+  .results-meta {
+    padding: 0.75rem 1rem;
+    font-size: 0.82rem;
+    color: var(--gris-medio);
+    border-bottom: 1px solid var(--borde);
+  }
+
+  .results-card {
+    overflow: hidden;
+  }
+
+  .badge-valid {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+  }
+
+  .badge-expiring {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+  }
+
+  .badge-error {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+  }
+
+  .form-col .btn {
+    align-self: flex-start;
+  }
+
+  @media (max-width: 600px) {
+    .form-col .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+
+<script>
+  const domainsInput = document.getElementById('domains-input') as HTMLTextAreaElement;
+  const btn = document.getElementById('check-btn')!;
+  const loading = document.getElementById('loading')!;
+  const error = document.getElementById('error')!;
+  const card = document.getElementById('results-card')!;
+  const meta = document.getElementById('results-meta')!;
+  const tbody = document.getElementById('results-body')!;
+
+  async function check() {
+    const raw = domainsInput.value.trim();
+
+    error.classList.remove('active');
+    card.style.display = 'none';
+    loading.classList.add('active');
+
+    if (!raw) {
+      loading.classList.remove('active');
+      error.textContent = 'Ingresá al menos un dominio.';
+      error.classList.add('active');
+      return;
+    }
+
+    const domains = raw.split('\n').map(d => d.trim()).filter(Boolean).slice(0, 10);
+    const csv = domains.join(',');
+
+    try {
+      const res = await fetch(`/api/cert-expiry?domains=${encodeURIComponent(csv)}`);
+      const data = await res.json();
+
+      loading.classList.remove('active');
+
+      if (data.error) {
+        error.textContent = data.error;
+        error.classList.add('active');
+        return;
+      }
+
+      meta.textContent = `${data.total} dominio(s) consultado(s)`;
+
+      tbody.innerHTML = data.results.map((r: any) => {
+        if (r.error) {
+          return `<tr>
+            <td><code>${esc(r.domain)}</code></td>
+            <td colspan="4">—</td>
+            <td><span class="badge-error">${esc(r.error)}</span></td>
+          </tr>`;
+        }
+
+        let badge = '';
+        if (r.daysLeft <= 0) badge = '<span class="badge-error">Expirado</span>';
+        else if (r.daysLeft <= 30) badge = '<span class="badge-expiring">Expira pronto</span>';
+        else badge = '<span class="badge-valid">Válido</span>';
+
+        const date = new Date(r.notAfter).toLocaleDateString('es-AR');
+        const issuerShort = r.issuer.length > 40 ? r.issuer.substring(0, 40) + '...' : r.issuer;
+
+        return `<tr>
+          <td><code>${esc(r.domain)}</code></td>
+          <td><code>${esc(r.commonName)}</code></td>
+          <td title="${esc(r.issuer)}">${esc(issuerShort)}</td>
+          <td>${date}</td>
+          <td><strong>${r.daysLeft}</strong></td>
+          <td>${badge}</td>
+        </tr>`;
+      }).join('');
+
+      card.style.display = 'block';
+    } catch {
+      loading.classList.remove('active');
+      error.textContent = 'Error de conexión. Intentá de nuevo.';
+      error.classList.add('active');
+    }
+  }
+
+  function esc(s: string): string {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  btn.addEventListener('click', check);
+  domainsInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) check();
+  });
+</script>

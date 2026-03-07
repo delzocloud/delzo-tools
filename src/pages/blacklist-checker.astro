@@ -1,0 +1,168 @@
+---
+import ToolLayout from '../components/ToolLayout.astro';
+---
+
+<ToolLayout
+  title="Blacklist Checker"
+  description="Verificá si una IP o dominio está en listas negras (DNSBL). Consultá 12 blacklists en paralelo."
+  heading="Blacklist Checker"
+  subheading="Verificá si una IP o dominio está listado en las principales DNSBLs."
+>
+  <div slot="form">
+    <div class="form-row">
+      <div class="input-group">
+        <label for="target-input">IP o Dominio</label>
+        <input
+          type="text"
+          id="target-input"
+          placeholder="192.168.1.1 o ejemplo.com"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+      <button class="btn" id="check-btn">Verificar</button>
+    </div>
+    <div class="loading" id="loading"><div class="spinner"></div> Consultando blacklists...</div>
+    <div class="error-msg" id="error"></div>
+  </div>
+
+  <div slot="results">
+    <div class="results-card card" id="results-card" style="display:none;">
+      <div class="results-summary" id="results-summary"></div>
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th>Lista</th>
+            <th>Estado</th>
+            <th>Respuesta</th>
+          </tr>
+        </thead>
+        <tbody id="results-body"></tbody>
+      </table>
+    </div>
+  </div>
+</ToolLayout>
+
+<style>
+  .form-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+  }
+
+  .input-group {
+    flex: 1;
+  }
+
+  .results-summary {
+    padding: 1rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-bottom: 1px solid var(--borde);
+  }
+
+  .results-card {
+    overflow: hidden;
+  }
+
+  .badge-pass {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+  }
+
+  .badge-fail {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+  }
+
+  @media (max-width: 600px) {
+    .form-row {
+      flex-direction: column;
+    }
+
+    .form-row .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+
+<script>
+  const targetInput = document.getElementById('target-input') as HTMLInputElement;
+  const btn = document.getElementById('check-btn')!;
+  const loading = document.getElementById('loading')!;
+  const error = document.getElementById('error')!;
+  const card = document.getElementById('results-card')!;
+  const summary = document.getElementById('results-summary')!;
+  const tbody = document.getElementById('results-body')!;
+
+  async function check() {
+    const target = targetInput.value.trim();
+
+    error.classList.remove('active');
+    card.style.display = 'none';
+    loading.classList.add('active');
+
+    if (!target) {
+      loading.classList.remove('active');
+      error.textContent = 'Ingresá una IP o dominio.';
+      error.classList.add('active');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/blacklist-checker?target=${encodeURIComponent(target)}`);
+      const data = await res.json();
+
+      loading.classList.remove('active');
+
+      if (data.error) {
+        error.textContent = data.error;
+        error.classList.add('active');
+        return;
+      }
+
+      const ipInfo = data.domain ? `${data.domain} (${data.ip})` : data.ip;
+      if (data.listed > 0) {
+        summary.innerHTML = `<span style="color:#dc2626">${ipInfo} — Listado en ${data.listed}/${data.total} blacklists</span>`;
+      } else {
+        summary.innerHTML = `<span style="color:#059669">${ipInfo} — Limpio en ${data.total}/${data.total} blacklists</span>`;
+      }
+
+      tbody.innerHTML = data.results.map((r: any) => `
+        <tr>
+          <td><code>${esc(r.list)}</code></td>
+          <td>${r.listed ? '<span class="badge-fail">Listado</span>' : '<span class="badge-pass">Limpio</span>'}</td>
+          <td>${r.response ? '<code>' + esc(r.response) + '</code>' : '—'}</td>
+        </tr>
+      `).join('');
+
+      card.style.display = 'block';
+    } catch {
+      loading.classList.remove('active');
+      error.textContent = 'Error de conexión. Intentá de nuevo.';
+      error.classList.add('active');
+    }
+  }
+
+  function esc(s: string): string {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  btn.addEventListener('click', check);
+  targetInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') check();
+  });
+</script>
