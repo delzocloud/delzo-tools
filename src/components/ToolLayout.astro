@@ -16,7 +16,7 @@ const { title, description, heading, subheading } = Astro.props;
 <BaseLayout title={title} description={description}>
   <slot name="head" slot="head" />
   <Header />
-  <main class="tool-page">
+  <main class="tool-page" id="main-content">
     <div class="container">
       <div class="tool-header">
         <h1>{heading}</h1>

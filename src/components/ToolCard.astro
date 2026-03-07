@@ -11,8 +11,11 @@ const { title, description, href, icon } = Astro.props;
 
 <a href={href} class="tool-card card">
   <div class="tool-icon">{icon}</div>
-  <h3>{title}</h3>
-  <p>{description}</p>
+  <div class="tool-content">
+    <h3>{title}</h3>
+    <p>{description}</p>
+  </div>
+  <span class="tool-arrow" aria-hidden="true">&rarr;</span>
 </a>
 
 <style>
@@ -20,29 +23,59 @@ const { title, description, href, icon } = Astro.props;
     text-decoration: none;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.75rem;
     cursor: pointer;
+    position: relative;
+  }
+
+  .tool-card:hover {
+    border-color: rgba(16, 185, 129, 0.35);
   }
 
   .tool-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(110, 231, 183, 0.18));
-    border-radius: 12px;
-    font-size: 1.4rem;
+    width: 44px;
+    height: 44px;
+    background: var(--fondo-alt);
+    border-radius: 10px;
+    font-size: 1.3rem;
+    transition: background 0.25s ease;
+  }
+
+  .tool-card:hover .tool-icon {
+    background: rgba(16, 185, 129, 0.1);
+  }
+
+  .tool-content {
+    flex: 1;
   }
 
   h3 {
-    font-size: 1.05rem;
+    font-size: 1rem;
+    font-weight: 600;
     color: var(--gris-oscuro);
+    margin-bottom: 0.25rem;
   }
 
   p {
-    font-size: 0.9rem;
-    line-height: 1.5;
+    font-size: 0.88rem;
+    line-height: 1.55;
     color: var(--gris-medio);
+  }
+
+  .tool-arrow {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    font-size: 1rem;
+    color: var(--gris-claro);
+    transition: color 0.2s ease, transform 0.2s ease;
+  }
+
+  .tool-card:hover .tool-arrow {
+    color: var(--verde);
+    transform: translateX(2px);
   }
 </style>

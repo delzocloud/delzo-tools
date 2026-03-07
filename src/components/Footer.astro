@@ -10,7 +10,14 @@ const year = new Date().getFullYear();
       </a>
       <p>Herramientas de networking gratuitas para profesionales IT.</p>
     </div>
-    <p class="footer-copy">&copy; {year} delzo.cloud</p>
+    <div class="footer-right">
+      <nav class="footer-links">
+        <a href="https://delzo.cloud" target="_blank" rel="noopener">Sitio principal</a>
+        <a href="https://delzo.cloud/privacy" target="_blank" rel="noopener">Privacidad</a>
+        <a href="https://delzo.cloud/terms" target="_blank" rel="noopener">Términos</a>
+      </nav>
+      <p class="footer-copy">&copy; {year} delzo.cloud</p>
+    </div>
   </div>
 </footer>
 
@@ -24,7 +31,7 @@ const year = new Date().getFullYear();
   .footer-inner {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
   }
 
   .wordmark {
@@ -49,6 +56,27 @@ const year = new Date().getFullYear();
     margin-top: 0.25rem;
   }
 
+  .footer-right {
+    text-align: right;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .footer-links a {
+    font-size: 0.82rem;
+    color: var(--gris-medio);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .footer-links a:hover {
+    color: var(--verde-dark);
+  }
+
   .footer-copy {
     font-size: 0.8rem;
     color: var(--gris-claro);
@@ -57,8 +85,17 @@ const year = new Date().getFullYear();
   @media (max-width: 600px) {
     .footer-inner {
       flex-direction: column;
-      gap: 0.75rem;
+      gap: 1.25rem;
       text-align: center;
+      align-items: center;
+    }
+
+    .footer-right {
+      text-align: center;
+    }
+
+    .footer-links {
+      justify-content: center;
     }
   }
 </style>

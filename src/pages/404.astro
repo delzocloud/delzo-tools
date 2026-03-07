@@ -1,0 +1,51 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<BaseLayout
+  title="Página no encontrada"
+  description="La página que buscás no existe."
+>
+  <Header />
+  <main class="not-found" id="main-content">
+    <div class="container">
+      <div class="error-code">404</div>
+      <h1>Página no encontrada</h1>
+      <p>La página que buscás no existe o fue movida.</p>
+      <a href="/" class="btn">Volver al inicio</a>
+    </div>
+  </main>
+  <Footer />
+</BaseLayout>
+
+<style>
+  .not-found {
+    min-height: calc(100dvh - 200px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 3rem 0;
+  }
+
+  .error-code {
+    font-size: 6rem;
+    font-weight: 800;
+    letter-spacing: -0.06em;
+    line-height: 1;
+    color: var(--fondo-alt);
+    margin-bottom: 0.5rem;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    color: var(--gris-medio);
+    margin-bottom: 1.5rem;
+  }
+</style>

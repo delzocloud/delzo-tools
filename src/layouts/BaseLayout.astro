@@ -19,10 +19,19 @@ import '../styles/global.css';
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-sans/style.min.css" />
+  <meta property="og:title" content={`${title} — delzo.cloud tools`} />
+  <meta property="og:description" content={description} />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="delzo.cloud tools" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content={`${title} — delzo.cloud tools`} />
+  <meta name="twitter:description" content={description} />
   <slot name="head" />
 </head>
 <body>
+  <a href="#main-content" class="skip-to-content">Saltar al contenido</a>
   <slot />
 </body>
 </html>

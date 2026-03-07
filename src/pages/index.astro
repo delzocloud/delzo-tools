@@ -79,23 +79,27 @@ const tools = [
   description="Herramientas gratuitas de DNS, email, redes e IP para profesionales IT. Por delzo.cloud."
 >
   <Header />
-  <main>
+  <main id="main-content">
     <section class="hero">
       <div class="container">
+        <p class="hero-eyebrow">delzo.cloud / tools</p>
         <h1>Herramientas de networking <span class="text-gradient">gratuitas</span></h1>
         <p class="hero-sub">DNS, email, seguridad, redes e IP — todo en un solo lugar. Sin registro, sin límites.</p>
+        <div class="hero-count">{tools.length} herramientas disponibles</div>
       </div>
     </section>
     <section class="tools-section">
       <div class="container">
         <div class="tools-grid">
-          {tools.map(tool => (
-            <ToolCard
-              title={tool.title}
-              description={tool.description}
-              href={tool.href}
-              icon={tool.icon}
-            />
+          {tools.map((tool, i) => (
+            <div class:list={['tool-cell', { 'featured': i < 2 }]}>
+              <ToolCard
+                title={tool.title}
+                description={tool.description}
+                href={tool.href}
+                icon={tool.icon}
+              />
+            </div>
           ))}
         </div>
       </div>
@@ -106,14 +110,23 @@ const tools = [
 
 <style>
   .hero {
-    padding: 4rem 0 3rem;
+    padding: 4.5rem 0 3.5rem;
     text-align: center;
   }
 
-  .hero h1 {
-    font-size: 2.5rem;
-    letter-spacing: -0.04em;
+  .hero-eyebrow {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--verde);
+    letter-spacing: 0.02em;
     margin-bottom: 0.75rem;
+  }
+
+  .hero h1 {
+    font-size: 2.75rem;
+    letter-spacing: -0.045em;
+    margin-bottom: 0.85rem;
+    line-height: 1.1;
   }
 
   .text-gradient {
@@ -124,31 +137,62 @@ const tools = [
   }
 
   .hero-sub {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
     color: var(--gris-medio);
-    max-width: 480px;
+    max-width: 460px;
     margin: 0 auto;
+    line-height: 1.6;
+    text-wrap: balance;
+  }
+
+  .hero-count {
+    margin-top: 1.5rem;
+    display: inline-block;
+    padding: 0.3rem 0.85rem;
+    background: var(--fondo-alt);
+    border: 1px solid var(--borde);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--gris-medio);
+    font-variant-numeric: tabular-nums;
   }
 
   .tools-section {
-    padding: 0 0 4rem;
+    padding: 0 0 5rem;
   }
 
   .tools-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
   }
 
-  @media (max-width: 900px) {
+  .tool-cell.featured :global(.tool-card) {
+    padding: 2rem;
+  }
+
+  .tool-cell.featured :global(h3) {
+    font-size: 1.15rem;
+  }
+
+  @media (min-width: 900px) {
     .tools-grid {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .tool-cell.featured {
+      grid-column: span 1;
     }
   }
 
   @media (max-width: 600px) {
+    .hero {
+      padding: 3rem 0 2.5rem;
+    }
+
     .hero h1 {
-      font-size: 1.85rem;
+      font-size: 2rem;
     }
 
     .tools-grid {
