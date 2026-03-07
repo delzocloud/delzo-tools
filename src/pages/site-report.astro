@@ -1,0 +1,357 @@
+---
+import ToolLayout from '../components/ToolLayout.astro';
+---
+
+<ToolLayout
+  title="Site Security Report"
+  description="Generá un reporte PDF completo de seguridad para cualquier dominio. Email, headers, DNS y certificados."
+  heading="Site Security Report"
+  subheading="Analizá la seguridad de cualquier dominio y descargá un reporte PDF completo."
+>
+  <Fragment slot="head">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+  </Fragment>
+
+  <div slot="form">
+    <div class="form-row">
+      <div class="input-group">
+        <label for="domain-input">Dominio</label>
+        <input
+          type="text"
+          id="domain-input"
+          placeholder="ejemplo.com"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+      <button class="btn" id="generate-btn">Generar Reporte</button>
+    </div>
+    <div class="progress-container" id="progress">
+      <div class="spinner"></div>
+      <div class="progress-steps" id="progress-steps"></div>
+    </div>
+    <div class="error-msg" id="error"></div>
+  </div>
+
+  <div slot="results" id="results-container" style="display:none;">
+    <div class="grade-banner" id="grade-banner">
+      <div class="grade-badge" id="grade-badge"></div>
+      <div class="grade-info">
+        <div class="grade-label">Score General de Seguridad</div>
+        <div class="grade-score" id="grade-score"></div>
+        <div class="score-bar"><div class="score-bar-fill" id="score-bar-fill"></div></div>
+      </div>
+    </div>
+
+    <div class="summary-grid" id="summary-grid"></div>
+
+    <div class="download-section">
+      <button class="btn btn-download" id="download-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Descargar PDF
+      </button>
+      <p class="download-hint">El reporte incluye Email Security, Security Headers, DNS y Certificados SSL/TLS.</p>
+    </div>
+  </div>
+</ToolLayout>
+
+<style>
+  .form-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+  }
+
+  .input-group {
+    flex: 1;
+  }
+
+  .progress-container {
+    display: none;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding: 1rem 1.25rem;
+    background: var(--fondo-alt);
+    border-radius: 12px;
+  }
+
+  .progress-container.active {
+    display: flex;
+  }
+
+  .progress-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.88rem;
+    color: var(--gris-medio);
+  }
+
+  .progress-step {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .progress-step.done {
+    color: var(--verde);
+  }
+
+  .progress-step.active {
+    color: var(--gris-oscuro);
+    font-weight: 500;
+  }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin: 1.5rem 0;
+  }
+
+  .summary-card {
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    background: var(--blanco);
+  }
+
+  .summary-card-title {
+    font-size: 0.85rem;
+    color: var(--gris-medio);
+    margin-bottom: 0.35rem;
+  }
+
+  .summary-card-score {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gris-oscuro);
+  }
+
+  .summary-card-grade {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+  }
+
+  .summary-card-info {
+    font-size: 0.85rem;
+    color: var(--gris-medio);
+    font-style: italic;
+  }
+
+  .download-section {
+    text-align: center;
+    padding: 1.5rem 0;
+  }
+
+  .btn-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    padding: 0.75rem 2rem;
+  }
+
+  .download-hint {
+    font-size: 0.85rem;
+    color: var(--gris-medio);
+    margin-top: 0.75rem;
+  }
+
+  @media (max-width: 600px) {
+    .form-row {
+      flex-direction: column;
+    }
+
+    .form-row .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .summary-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  import { generatePDF } from '../lib/pdf-report';
+
+  const domainInput = document.getElementById('domain-input') as HTMLInputElement;
+  const btn = document.getElementById('generate-btn')!;
+  const progress = document.getElementById('progress')!;
+  const progressSteps = document.getElementById('progress-steps')!;
+  const error = document.getElementById('error')!;
+  const container = document.getElementById('results-container')!;
+  const downloadBtn = document.getElementById('download-btn')!;
+
+  let reportData: any = null;
+
+  const steps = [
+    { id: 'email', label: 'Analizando Email Security...' },
+    { id: 'headers', label: 'Verificando Security Headers...' },
+    { id: 'dns', label: 'Consultando registros DNS...' },
+    { id: 'certs', label: 'Consultando certificados SSL/TLS...' },
+  ];
+
+  function showProgress() {
+    progress.classList.add('active');
+    progressSteps.innerHTML = steps.map((s, i) =>
+      `<div class="progress-step${i === 0 ? ' active' : ''}" id="step-${s.id}">${i === 0 ? '⏳' : '⬜'} ${s.label}</div>`
+    ).join('');
+  }
+
+  function advanceProgress(stepIndex: number) {
+    // Mark previous as done
+    if (stepIndex > 0) {
+      const prev = document.getElementById(`step-${steps[stepIndex - 1].id}`);
+      if (prev) {
+        prev.className = 'progress-step done';
+        prev.innerHTML = `✅ ${steps[stepIndex - 1].label.replace('...', '')}`;
+      }
+    }
+    // Mark current as active
+    if (stepIndex < steps.length) {
+      const curr = document.getElementById(`step-${steps[stepIndex].id}`);
+      if (curr) {
+        curr.className = 'progress-step active';
+        curr.innerHTML = `⏳ ${steps[stepIndex].label}`;
+      }
+    }
+  }
+
+  function allStepsDone() {
+    const last = document.getElementById(`step-${steps[steps.length - 1].id}`);
+    if (last) {
+      last.className = 'progress-step done';
+      last.innerHTML = `✅ ${steps[steps.length - 1].label.replace('...', '')}`;
+    }
+  }
+
+  function escapeHtml(str: string): string {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  async function generate() {
+    const domain = domainInput.value.trim().toLowerCase();
+
+    error.classList.remove('active');
+    container.style.display = 'none';
+    reportData = null;
+
+    if (!domain) {
+      error.textContent = 'Ingresá un dominio.';
+      error.classList.add('active');
+      return;
+    }
+
+    showProgress();
+    btn.setAttribute('disabled', '');
+
+    // Simulate progress steps while the API runs
+    let stepIndex = 0;
+    const progressInterval = setInterval(() => {
+      stepIndex++;
+      if (stepIndex < steps.length) {
+        advanceProgress(stepIndex);
+      }
+    }, 2500);
+
+    try {
+      const res = await fetch(`/api/site-report?domain=${encodeURIComponent(domain)}`);
+      const data = await res.json();
+
+      clearInterval(progressInterval);
+      allStepsDone();
+
+      if (data.error) {
+        progress.classList.remove('active');
+        error.textContent = data.error;
+        error.classList.add('active');
+        btn.removeAttribute('disabled');
+        return;
+      }
+
+      reportData = data;
+
+      // Short delay so user sees all steps complete
+      await new Promise(r => setTimeout(r, 500));
+      progress.classList.remove('active');
+
+      // Show results summary
+      const gradeBadge = document.getElementById('grade-badge')!;
+      gradeBadge.textContent = data.overallScore.grade.grade;
+      gradeBadge.className = `grade-badge ${data.overallScore.grade.color}`;
+      document.getElementById('grade-score')!.textContent = `${data.overallScore.total} / 100`;
+      const fill = document.getElementById('score-bar-fill')!;
+      fill.style.width = `${data.overallScore.total}%`;
+      fill.className = `score-bar-fill ${data.overallScore.grade.color}`;
+
+      // Summary cards
+      const grid = document.getElementById('summary-grid')!;
+      grid.innerHTML = '';
+
+      if (data.emailSecurity) {
+        grid.innerHTML += `
+          <div class="summary-card">
+            <div class="summary-card-title">Email Security</div>
+            <div class="summary-card-score">${data.emailSecurity.score.total}/100
+              <span class="summary-card-grade" style="color: var(--${data.emailSecurity.score.grade.color === 'green' ? 'verde' : data.emailSecurity.score.grade.color === 'yellow' ? 'amarillo' : 'rojo'})">${escapeHtml(data.emailSecurity.score.grade.grade)}</span>
+            </div>
+          </div>`;
+      } else {
+        grid.innerHTML += `<div class="summary-card"><div class="summary-card-title">Email Security</div><div class="summary-card-info">Error al analizar</div></div>`;
+      }
+
+      if (data.securityHeaders) {
+        grid.innerHTML += `
+          <div class="summary-card">
+            <div class="summary-card-title">Security Headers</div>
+            <div class="summary-card-score">${data.securityHeaders.score.total}/100
+              <span class="summary-card-grade" style="color: var(--${data.securityHeaders.score.grade.color === 'green' ? 'verde' : data.securityHeaders.score.grade.color === 'yellow' ? 'amarillo' : 'rojo'})">${escapeHtml(data.securityHeaders.score.grade.grade)}</span>
+            </div>
+          </div>`;
+      } else {
+        grid.innerHTML += `<div class="summary-card"><div class="summary-card-title">Security Headers</div><div class="summary-card-info">Error al verificar</div></div>`;
+      }
+
+      const dnsCount = data.dns ? (data.dns.a.length + data.dns.mx.length + data.dns.ns.length + data.dns.txt.length) : 0;
+      grid.innerHTML += `
+        <div class="summary-card">
+          <div class="summary-card-title">DNS Records</div>
+          <div class="summary-card-info">${data.dns ? `${dnsCount} registros encontrados` : 'Error al consultar'}</div>
+        </div>`;
+
+      const certCount = data.certificates ? data.certificates.total : 0;
+      grid.innerHTML += `
+        <div class="summary-card">
+          <div class="summary-card-title">Certificados SSL/TLS</div>
+          <div class="summary-card-info">${data.certificates ? `${certCount} certificados encontrados` : 'Error al consultar'}</div>
+        </div>`;
+
+      container.style.display = 'block';
+      btn.removeAttribute('disabled');
+
+      // Auto-download PDF
+      generatePDF(data);
+    } catch {
+      clearInterval(progressInterval);
+      progress.classList.remove('active');
+      error.textContent = 'Error de conexión. Intentá de nuevo.';
+      error.classList.add('active');
+      btn.removeAttribute('disabled');
+    }
+  }
+
+  downloadBtn.addEventListener('click', () => {
+    if (reportData) generatePDF(reportData);
+  });
+
+  btn.addEventListener('click', generate);
+  domainInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') generate();
+  });
+</script>
