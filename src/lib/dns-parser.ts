@@ -1,5 +1,47 @@
 import type { AuthStatus, SpfResult, DmarcResult, DkimResult } from './types';
 import { queryDns } from './dns-client';
+import { computeGrade, type GradeResult } from './grading';
+
+export interface EmailScore {
+  total: number;
+  spfScore: number;
+  dmarcScore: number;
+  dkimScore: number;
+  grade: GradeResult;
+}
+
+export function computeEmailScore(spf: SpfResult, dmarc: DmarcResult, dkim: DkimResult): EmailScore {
+  // SPF: 30 pts max
+  let spfScore = 0;
+  if (spf.record) {
+    if (spf.record.includes('+all')) spfScore = 5;
+    else if (spf.record.includes('?all')) spfScore = 10;
+    else if (spf.record.includes('~all')) spfScore = 25;
+    else if (spf.record.includes('-all')) spfScore = 30;
+    else spfScore = 15; // has record but no recognizable qualifier
+
+    const lookups = (spf.record.match(/\b(include:|a:|a\b|mx:|mx\b|ptr:|ptr\b|exists:|redirect=)/g) || []).length;
+    if (lookups > 10) spfScore = Math.max(0, spfScore - 5);
+  }
+
+  // DMARC: 40 pts max
+  let dmarcScore = 0;
+  if (dmarc.record) {
+    const policy = dmarc.policy;
+    if (policy === 'none') dmarcScore = 15;
+    else if (policy === 'quarantine') dmarcScore = 30;
+    else if (policy === 'reject') dmarcScore = 35;
+    else dmarcScore = 10;
+
+    if (dmarc.record.includes('rua=')) dmarcScore = Math.min(40, dmarcScore + 5);
+  }
+
+  // DKIM: 30 pts max
+  let dkimScore = dkim.record ? 30 : 5;
+
+  const total = spfScore + dmarcScore + dkimScore;
+  return { total, spfScore, dmarcScore, dkimScore, grade: computeGrade(total) };
+}
 
 export async function analyzeSpf(domain: string): Promise<SpfResult> {
   try {

@@ -1,0 +1,189 @@
+---
+import ToolLayout from '../components/ToolLayout.astro';
+---
+
+<ToolLayout
+  title="Security Headers Checker"
+  description="Verificá los headers HTTP de seguridad de cualquier sitio web. Score A+ a F."
+  heading="Security Headers Checker"
+  subheading="Verificá los 7 headers HTTP de seguridad más importantes de cualquier sitio."
+>
+  <div slot="form">
+    <div class="form-row">
+      <div class="input-group">
+        <label for="url-input">URL o dominio</label>
+        <input
+          type="text"
+          id="url-input"
+          placeholder="ejemplo.com"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+      <button class="btn" id="check-btn">Verificar</button>
+    </div>
+    <div class="loading" id="loading"><div class="spinner"></div> Verificando headers de seguridad...</div>
+    <div class="error-msg" id="error"></div>
+  </div>
+
+  <div slot="results" id="results-container" style="display:none;">
+    <div class="grade-banner" id="grade-banner">
+      <div class="grade-badge" id="grade-badge"></div>
+      <div class="grade-info">
+        <div class="grade-label">Security Headers Score</div>
+        <div class="grade-score" id="grade-score"></div>
+        <div class="score-bar"><div class="score-bar-fill" id="score-bar-fill"></div></div>
+      </div>
+    </div>
+
+    <div class="headers-list" id="headers-list"></div>
+  </div>
+</ToolLayout>
+
+<style>
+  .form-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+  }
+
+  .input-group {
+    flex: 1;
+  }
+
+  .headers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .header-item {
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    background: var(--blanco);
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.35rem;
+  }
+
+  .header-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--gris-oscuro);
+  }
+
+  .header-detail {
+    font-size: 0.88rem;
+    color: var(--gris-medio);
+    margin-bottom: 0.35rem;
+  }
+
+  .header-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    background: var(--fondo-alt);
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    word-break: break-all;
+    color: var(--gris-oscuro);
+    line-height: 1.5;
+  }
+
+  @media (max-width: 480px) {
+    .form-row {
+      flex-direction: column;
+    }
+
+    .form-row .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+
+<script>
+  const urlInput = document.getElementById('url-input') as HTMLInputElement;
+  const btn = document.getElementById('check-btn')!;
+  const loading = document.getElementById('loading')!;
+  const error = document.getElementById('error')!;
+  const container = document.getElementById('results-container')!;
+
+  async function check() {
+    const url = urlInput.value.trim();
+
+    error.classList.remove('active');
+    container.style.display = 'none';
+    loading.classList.add('active');
+
+    if (!url) {
+      loading.classList.remove('active');
+      error.textContent = 'Ingresá una URL o dominio.';
+      error.classList.add('active');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/security-headers?url=${encodeURIComponent(url)}`);
+      const data = await res.json();
+
+      loading.classList.remove('active');
+
+      if (data.error) {
+        error.textContent = data.error;
+        error.classList.add('active');
+        return;
+      }
+
+      // Grade banner
+      const gradeBadge = document.getElementById('grade-badge')!;
+      gradeBadge.textContent = data.score.grade.grade;
+      gradeBadge.className = `grade-badge ${data.score.grade.color}`;
+      document.getElementById('grade-score')!.textContent = `${data.score.total} / 100`;
+      const fill = document.getElementById('score-bar-fill')!;
+      fill.style.width = `${data.score.total}%`;
+      fill.className = `score-bar-fill ${data.score.grade.color}`;
+
+      // Headers list
+      const list = document.getElementById('headers-list')!;
+      list.innerHTML = '';
+
+      for (const h of data.headers) {
+        const statusLabels: Record<string, string> = { pass: '✓ Pass', warning: '⚠ Warning', fail: '✗ Fail' };
+        const valueHtml = h.value
+          ? `<div class="header-value">${escapeHtml(h.value)}</div>`
+          : '';
+
+        list.innerHTML += `
+          <div class="header-item">
+            <div class="header-top">
+              <span class="header-name">${escapeHtml(h.name)}</span>
+              <span class="badge badge-${h.status}">${statusLabels[h.status]}</span>
+            </div>
+            <div class="header-detail">${escapeHtml(h.detail)}</div>
+            ${valueHtml}
+          </div>
+        `;
+      }
+
+      container.style.display = 'block';
+    } catch {
+      loading.classList.remove('active');
+      error.textContent = 'Error de conexión. Intentá de nuevo.';
+      error.classList.add('active');
+    }
+  }
+
+  function escapeHtml(str: string): string {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  btn.addEventListener('click', check);
+  urlInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') check();
+  });
+</script>

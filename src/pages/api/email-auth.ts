@@ -1,7 +1,7 @@
 export const prerender = false;
 
 import type { APIRoute } from 'astro';
-import { analyzeSpf, analyzeDmarc, analyzeDkim } from '../../lib/dns-parser';
+import { analyzeSpf, analyzeDmarc, analyzeDkim, computeEmailScore } from '../../lib/dns-parser';
 
 const DOMAIN_RE = /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
 
@@ -23,7 +23,8 @@ export const GET: APIRoute = async ({ url }) => {
       analyzeDkim(domain),
     ]);
 
-    return json({ domain, spf, dmarc, dkim });
+    const score = computeEmailScore(spf, dmarc, dkim);
+    return json({ domain, score, spf, dmarc, dkim });
   } catch (err: any) {
     return json({ error: err.message || 'Error al analizar la autenticación de email.' }, 500);
   }

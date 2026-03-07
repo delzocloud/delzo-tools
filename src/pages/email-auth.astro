@@ -3,10 +3,10 @@ import ToolLayout from '../components/ToolLayout.astro';
 ---
 
 <ToolLayout
-  title="Email Auth Analyzer"
-  description="Analizá SPF, DMARC y DKIM de cualquier dominio. Detectá problemas de autenticación de email."
-  heading="Email Auth Analyzer"
-  subheading="Analizá la autenticación de email (SPF, DMARC, DKIM) de cualquier dominio."
+  title="Email Security Grader"
+  description="Analizá SPF, DMARC y DKIM de cualquier dominio. Score de seguridad de 0 a 100 con grado A+ a F."
+  heading="Email Security Grader"
+  subheading="Analizá la autenticación de email (SPF, DMARC, DKIM) y obtené un score de seguridad."
 >
   <div slot="form">
     <div class="form-row">
@@ -22,11 +22,26 @@ import ToolLayout from '../components/ToolLayout.astro';
       </div>
       <button class="btn" id="analyze-btn">Analizar</button>
     </div>
-    <div class="loading" id="loading"><div class="spinner"></div> Analizando autenticación de email...</div>
+    <div class="loading" id="loading"><div class="spinner"></div> Analizando seguridad de email...</div>
     <div class="error-msg" id="error"></div>
   </div>
 
   <div slot="results" id="results-container" style="display:none;">
+    <!-- Score banner -->
+    <div class="grade-banner" id="grade-banner">
+      <div class="grade-badge" id="grade-badge"></div>
+      <div class="grade-info">
+        <div class="grade-label">Email Security Score</div>
+        <div class="grade-score" id="grade-score"></div>
+        <div class="score-bar"><div class="score-bar-fill" id="score-bar-fill"></div></div>
+        <div class="score-breakdown">
+          <div class="score-item"><span>SPF</span> <strong id="score-spf"></strong></div>
+          <div class="score-item"><span>DMARC</span> <strong id="score-dmarc"></strong></div>
+          <div class="score-item"><span>DKIM</span> <strong id="score-dkim"></strong></div>
+        </div>
+      </div>
+    </div>
+
     <div class="auth-sections">
       <!-- SPF -->
       <div class="auth-section card">
@@ -187,6 +202,23 @@ import ToolLayout from '../components/ToolLayout.astro';
     badge.className = `badge badge-${status}`;
   }
 
+  function renderScore(data: any) {
+    const { score } = data;
+    const gradeBadge = document.getElementById('grade-badge')!;
+    gradeBadge.textContent = score.grade.grade;
+    gradeBadge.className = `grade-badge ${score.grade.color}`;
+
+    document.getElementById('grade-score')!.textContent = `${score.total} / 100`;
+
+    const fill = document.getElementById('score-bar-fill')!;
+    fill.style.width = `${score.total}%`;
+    fill.className = `score-bar-fill ${score.grade.color}`;
+
+    document.getElementById('score-spf')!.textContent = `${score.spfScore}/30`;
+    document.getElementById('score-dmarc')!.textContent = `${score.dmarcScore}/40`;
+    document.getElementById('score-dkim')!.textContent = `${score.dkimScore}/30`;
+  }
+
   async function analyze() {
     const domain = domainInput.value.trim();
 
@@ -212,6 +244,9 @@ import ToolLayout from '../components/ToolLayout.astro';
         error.classList.add('active');
         return;
       }
+
+      // Score banner
+      renderScore(data);
 
       // SPF
       setBadge('spf-badge', data.spf.status);

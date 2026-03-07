@@ -1,0 +1,302 @@
+---
+import ToolLayout from '../components/ToolLayout.astro';
+---
+
+<ToolLayout
+  title="Certificate Transparency Monitor"
+  description="Consultá certificados SSL/TLS emitidos para cualquier dominio via Certificate Transparency logs."
+  heading="Certificate Transparency Monitor"
+  subheading="Consultá los certificados SSL/TLS emitidos para un dominio via crt.sh."
+>
+  <div slot="form">
+    <div class="form-row">
+      <div class="input-group">
+        <label for="domain-input">Dominio</label>
+        <input
+          type="text"
+          id="domain-input"
+          placeholder="ejemplo.com"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+      <button class="btn" id="search-btn">Buscar</button>
+    </div>
+    <div class="form-options">
+      <label class="checkbox-label">
+        <input type="checkbox" id="include-expired" />
+        Incluir expirados
+      </label>
+    </div>
+    <div class="loading" id="loading"><div class="spinner"></div> Consultando Certificate Transparency logs...</div>
+    <div class="error-msg" id="error"></div>
+  </div>
+
+  <div slot="results" id="results-container" style="display:none;">
+    <div class="results-summary" id="results-summary"></div>
+    <div class="certs-list" id="certs-list"></div>
+  </div>
+</ToolLayout>
+
+<style>
+  .form-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+  }
+
+  .input-group {
+    flex: 1;
+  }
+
+  .form-options {
+    margin-top: 0.75rem;
+  }
+
+  .checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--gris-medio);
+    cursor: pointer;
+  }
+
+  .checkbox-label input[type="checkbox"] {
+    accent-color: var(--verde);
+    width: 16px;
+    height: 16px;
+  }
+
+  .results-summary {
+    font-size: 0.9rem;
+    color: var(--gris-medio);
+    margin-bottom: 1rem;
+    padding: 0.6rem 1rem;
+    background: var(--fondo-alt);
+    border-radius: 10px;
+  }
+
+  .certs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .cert-card {
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    background: var(--blanco);
+    border-left: 4px solid var(--borde);
+  }
+
+  .cert-card.valid {
+    border-left-color: var(--verde);
+  }
+
+  .cert-card.expiring {
+    border-left-color: var(--amarillo);
+  }
+
+  .cert-card.expired {
+    border-left-color: var(--rojo);
+  }
+
+  .cert-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+    gap: 0.5rem;
+  }
+
+  .cert-cn {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--gris-oscuro);
+    word-break: break-all;
+  }
+
+  .cert-meta {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.25rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .cert-meta dt {
+    color: var(--gris-medio);
+    font-weight: 500;
+  }
+
+  .cert-meta dd {
+    color: var(--gris-oscuro);
+    word-break: break-all;
+  }
+
+  .cert-sans {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--borde);
+  }
+
+  .cert-sans-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--gris-medio);
+    margin-bottom: 0.25rem;
+  }
+
+  .cert-sans-list {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--gris-oscuro);
+    line-height: 1.6;
+    word-break: break-all;
+  }
+
+  .cert-link {
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-size: 0.82rem;
+    color: var(--verde);
+    text-decoration: none;
+  }
+
+  .cert-link:hover {
+    color: var(--verde-dark);
+    text-decoration: underline;
+  }
+
+  @media (max-width: 480px) {
+    .form-row {
+      flex-direction: column;
+    }
+
+    .form-row .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+
+<script>
+  const domainInput = document.getElementById('domain-input') as HTMLInputElement;
+  const btn = document.getElementById('search-btn')!;
+  const expiredCheckbox = document.getElementById('include-expired') as HTMLInputElement;
+  const loading = document.getElementById('loading')!;
+  const error = document.getElementById('error')!;
+  const container = document.getElementById('results-container')!;
+
+  function formatDate(iso: string): string {
+    return new Date(iso).toLocaleDateString('es-AR', {
+      year: 'numeric', month: 'short', day: 'numeric'
+    });
+  }
+
+  function escapeHtml(str: string): string {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function extractIssuerCN(issuer: string): string {
+    const match = issuer.match(/CN=([^,]+)/);
+    return match ? match[1] : issuer;
+  }
+
+  async function search() {
+    const domain = domainInput.value.trim();
+    const includeExpired = expiredCheckbox.checked;
+
+    error.classList.remove('active');
+    container.style.display = 'none';
+    loading.classList.add('active');
+
+    if (!domain) {
+      loading.classList.remove('active');
+      error.textContent = 'Ingresá un dominio.';
+      error.classList.add('active');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/cert-monitor?domain=${encodeURIComponent(domain)}&expired=${includeExpired}`);
+      const data = await res.json();
+
+      loading.classList.remove('active');
+
+      if (data.error) {
+        error.textContent = data.error;
+        error.classList.add('active');
+        return;
+      }
+
+      // Summary
+      document.getElementById('results-summary')!.textContent =
+        `${data.total} certificado${data.total !== 1 ? 's' : ''} encontrado${data.total !== 1 ? 's' : ''} para ${data.domain}`;
+
+      // Certs list
+      const list = document.getElementById('certs-list')!;
+      list.innerHTML = '';
+
+      if (data.certs.length === 0) {
+        list.innerHTML = '<p style="color:var(--gris-medio);font-size:0.9rem;">No se encontraron certificados.</p>';
+        container.style.display = 'block';
+        return;
+      }
+
+      const statusLabels: Record<string, string> = {
+        valid: '✓ Válido',
+        expiring: '⚠ Vence pronto',
+        expired: '✗ Expirado',
+      };
+      const statusBadge: Record<string, string> = {
+        valid: 'pass',
+        expiring: 'warning',
+        expired: 'fail',
+      };
+
+      for (const cert of data.certs) {
+        const sansHtml = cert.sans.length > 0
+          ? `<div class="cert-sans">
+              <div class="cert-sans-label">SANs</div>
+              <div class="cert-sans-list">${cert.sans.map((s: string) => escapeHtml(s)).join(', ')}</div>
+            </div>`
+          : '';
+
+        list.innerHTML += `
+          <div class="cert-card ${cert.status}">
+            <div class="cert-top">
+              <span class="cert-cn">${escapeHtml(cert.commonName)}</span>
+              <span class="badge badge-${statusBadge[cert.status]}">${statusLabels[cert.status]}</span>
+            </div>
+            <dl class="cert-meta">
+              <dt>Emisor</dt>
+              <dd>${escapeHtml(extractIssuerCN(cert.issuer))}</dd>
+              <dt>Válido desde</dt>
+              <dd>${formatDate(cert.notBefore)}</dd>
+              <dt>Vence</dt>
+              <dd>${formatDate(cert.notAfter)}</dd>
+            </dl>
+            ${sansHtml}
+            <a class="cert-link" href="https://crt.sh/?id=${cert.id}" target="_blank" rel="noopener">Ver en crt.sh →</a>
+          </div>
+        `;
+      }
+
+      container.style.display = 'block';
+    } catch {
+      loading.classList.remove('active');
+      error.textContent = 'Error de conexión. Intentá de nuevo.';
+      error.classList.add('active');
+    }
+  }
+
+  btn.addEventListener('click', search);
+  domainInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') search();
+  });
+</script>

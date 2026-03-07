@@ -12,8 +12,8 @@ const tools = [
     icon: '🔍',
   },
   {
-    title: 'Email Auth Analyzer',
-    description: 'Analizá SPF, DMARC y DKIM de un dominio. Detectá problemas de autenticación de email.',
+    title: 'Email Security Grader',
+    description: 'Score de seguridad de email (0-100). Analizá SPF, DMARC y DKIM con grado A+ a F.',
     href: '/email-auth',
     icon: '📧',
   },
@@ -29,6 +29,18 @@ const tools = [
     href: '/ip-geolocation',
     icon: '🌐',
   },
+  {
+    title: 'Security Headers',
+    description: 'Verificá los 7 headers HTTP de seguridad de cualquier sitio. Score A+ a F.',
+    href: '/security-headers',
+    icon: '🛡️',
+  },
+  {
+    title: 'Cert Monitor',
+    description: 'Consultá certificados SSL/TLS emitidos para un dominio via Certificate Transparency.',
+    href: '/cert-monitor',
+    icon: '🔐',
+  },
 ];
 ---
 
@@ -41,7 +53,7 @@ const tools = [
     <section class="hero">
       <div class="container">
         <h1>Herramientas de networking <span class="text-gradient">gratuitas</span></h1>
-        <p class="hero-sub">DNS, email, redes e IP — todo en un solo lugar. Sin registro, sin límites.</p>
+        <p class="hero-sub">DNS, email, seguridad, redes e IP — todo en un solo lugar. Sin registro, sin límites.</p>
       </div>
     </section>
     <section class="tools-section">
@@ -94,8 +106,14 @@ const tools = [
 
   .tools-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 1.25rem;
+  }
+
+  @media (max-width: 900px) {
+    .tools-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
 
   @media (max-width: 600px) {
