@@ -34,7 +34,20 @@ import ToolLayout from '../components/ToolLayout.astro';
 
   <div slot="results" id="results-container" style="display:none;">
     <div class="results-summary" id="results-summary"></div>
-    <div class="certs-list" id="certs-list"></div>
+    <div class="certs-table-wrap card" id="certs-table-wrap" style="display:none;">
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th>Common Name</th>
+            <th>Estado</th>
+            <th>Emisor</th>
+            <th>Válido desde</th>
+            <th>Vence</th>
+          </tr>
+        </thead>
+        <tbody id="certs-body"></tbody>
+      </table>
+    </div>
   </div>
 </ToolLayout>
 
@@ -78,98 +91,39 @@ import ToolLayout from '../components/ToolLayout.astro';
     border-radius: 10px;
   }
 
-  .certs-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+  .certs-table-wrap {
+    overflow: hidden;
+    padding: 0;
   }
 
-  .cert-card {
-    padding: 1rem 1.25rem;
-    border: 1px solid var(--borde);
-    border-radius: 12px;
-    background: var(--blanco);
-    border-left: 4px solid var(--borde);
-  }
-
-  .cert-card.valid {
-    border-left-color: var(--verde);
-  }
-
-  .cert-card.expiring {
-    border-left-color: var(--amarillo);
-  }
-
-  .cert-card.expired {
-    border-left-color: var(--rojo);
-  }
-
-  .cert-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 0.5rem;
-    gap: 0.5rem;
-  }
-
-  .cert-cn {
+  :global(.cert-cn) {
     font-weight: 600;
-    font-size: 0.95rem;
-    color: var(--gris-oscuro);
     word-break: break-all;
   }
 
-  .cert-meta {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 0.25rem 0.75rem;
-    font-size: 0.85rem;
-  }
-
-  .cert-meta dt {
-    color: var(--gris-medio);
-    font-weight: 500;
-  }
-
-  .cert-meta dd {
-    color: var(--gris-oscuro);
-    word-break: break-all;
-  }
-
-  .cert-sans {
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-    border-top: 1px solid var(--borde);
-  }
-
-  .cert-sans-label {
+  :global(.cert-sans) {
+    font-family: var(--font-mono);
     font-size: 0.78rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
     color: var(--gris-medio);
-    margin-bottom: 0.25rem;
-  }
-
-  .cert-sans-list {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.8rem;
-    color: var(--gris-oscuro);
-    line-height: 1.6;
+    line-height: 1.5;
     word-break: break-all;
+    margin-top: 0.25rem;
   }
 
-  .cert-link {
-    display: inline-block;
-    margin-top: 0.5rem;
-    font-size: 0.82rem;
+  :global(.cert-link) {
+    font-size: 0.8rem;
     color: var(--verde);
     text-decoration: none;
   }
 
-  .cert-link:hover {
+  :global(.cert-link:hover) {
     color: var(--verde-dark);
     text-decoration: underline;
+  }
+
+  :global(.cert-detail-row td) {
+    padding-top: 0 !important;
+    font-size: 0.85rem;
   }
 
   @media (max-width: 480px) {
@@ -181,6 +135,71 @@ import ToolLayout from '../components/ToolLayout.astro';
     .form-row .btn {
       width: 100%;
       justify-content: center;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .certs-table-wrap {
+      padding: 0.5rem;
+    }
+
+    .certs-table-wrap :global(.results-table thead) {
+      display: none;
+    }
+
+    .certs-table-wrap :global(.results-table tr) {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      padding: 0.85rem 0.5rem;
+      border-bottom: 1px solid var(--borde);
+    }
+
+    .certs-table-wrap :global(.results-table tr:last-child) {
+      border-bottom: none;
+    }
+
+    .certs-table-wrap :global(.results-table td) {
+      border: none;
+      padding: 0;
+    }
+
+    .certs-table-wrap :global(.results-table tr.cert-detail-row) {
+      padding-top: 0;
+      margin-top: -0.5rem;
+    }
+
+    .certs-table-wrap :global(.results-table td:first-child) {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .certs-table-wrap :global(.results-table td.td-status) {
+      display: none;
+    }
+
+    :global(.badge-mobile) {
+      display: inline-flex !important;
+    }
+
+    .certs-table-wrap :global(.results-table td::before) {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--gris-claro);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-right: 0.35rem;
+    }
+
+    .certs-table-wrap :global(.results-table td:nth-child(3)::before) { content: "Emisor: "; }
+    .certs-table-wrap :global(.results-table td:nth-child(4)::before) { content: "Desde: "; }
+    .certs-table-wrap :global(.results-table td:nth-child(5)::before) { content: "Vence: "; }
+  }
+
+  @media (min-width: 769px) {
+    :global(.badge-mobile) {
+      display: none !important;
     }
   }
 </style>
@@ -239,12 +258,13 @@ import ToolLayout from '../components/ToolLayout.astro';
       document.getElementById('results-summary')!.textContent =
         `${data.total} certificado${data.total !== 1 ? 's' : ''} encontrado${data.total !== 1 ? 's' : ''} para ${data.domain}`;
 
-      // Certs list
-      const list = document.getElementById('certs-list')!;
-      list.innerHTML = '';
+      // Certs table
+      const tableWrap = document.getElementById('certs-table-wrap')!;
+      const tbody = document.getElementById('certs-body')!;
+      tbody.innerHTML = '';
 
       if (data.certs.length === 0) {
-        list.innerHTML = '<p style="color:var(--gris-medio);font-size:0.9rem;">No se encontraron certificados.</p>';
+        tableWrap.style.display = 'none';
         container.style.display = 'block';
         return;
       }
@@ -262,32 +282,30 @@ import ToolLayout from '../components/ToolLayout.astro';
 
       for (const cert of data.certs) {
         const sansHtml = cert.sans.length > 0
-          ? `<div class="cert-sans">
-              <div class="cert-sans-label">SANs</div>
-              <div class="cert-sans-list">${cert.sans.map((s: string) => escapeHtml(s)).join(', ')}</div>
-            </div>`
+          ? `<div class="cert-sans">${cert.sans.map((s: string) => escapeHtml(s)).join(', ')}</div>`
           : '';
 
-        list.innerHTML += `
-          <div class="cert-card ${cert.status}">
-            <div class="cert-top">
+        tbody.innerHTML += `
+          <tr>
+            <td>
               <span class="cert-cn">${escapeHtml(cert.commonName)}</span>
-              <span class="badge badge-${statusBadge[cert.status]}">${statusLabels[cert.status]}</span>
-            </div>
-            <dl class="cert-meta">
-              <dt>Emisor</dt>
-              <dd>${escapeHtml(extractIssuerCN(cert.issuer))}</dd>
-              <dt>Válido desde</dt>
-              <dd>${formatDate(cert.notBefore)}</dd>
-              <dt>Vence</dt>
-              <dd>${formatDate(cert.notAfter)}</dd>
-            </dl>
-            ${sansHtml}
-            <a class="cert-link" href="https://crt.sh/?id=${cert.id}" target="_blank" rel="noopener">Ver en crt.sh →</a>
-          </div>
+              <span class="badge badge-${statusBadge[cert.status]} badge-mobile">${statusLabels[cert.status]}</span>
+            </td>
+            <td class="td-status"><span class="badge badge-${statusBadge[cert.status]}">${statusLabels[cert.status]}</span></td>
+            <td>${escapeHtml(extractIssuerCN(cert.issuer))}</td>
+            <td>${formatDate(cert.notBefore)}</td>
+            <td>${formatDate(cert.notAfter)}</td>
+          </tr>
+          <tr class="cert-detail-row">
+            <td colspan="5">
+              ${sansHtml}
+              <a class="cert-link" href="https://crt.sh/?id=${cert.id}" target="_blank" rel="noopener">Ver en crt.sh →</a>
+            </td>
+          </tr>
         `;
       }
 
+      tableWrap.style.display = 'block';
       container.style.display = 'block';
     } catch {
       loading.classList.remove('active');
