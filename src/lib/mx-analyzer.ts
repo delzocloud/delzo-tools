@@ -71,15 +71,19 @@ export async function analyzeMx(domain: string): Promise<MxReport> {
   const mainProvider = providers.length === 1 ? providers[0] : 'Múltiples';
   const priorities = [...new Set(mxRecords.map((r) => r.priority))];
   const totalIps = mxRecords.reduce((sum, r) => sum + r.ips.length, 0);
-  const hasRedundancy = mxRecords.length > 1 && (priorities.length > 1 || totalIps > 1);
+  const hasRedundancy = mxRecords.length > 1 || totalIps > 1;
 
   let details: string;
-  if (mxRecords.length === 1) {
-    details = 'Solo hay un servidor MX. Se recomienda agregar al menos uno de respaldo.';
-  } else if (hasRedundancy) {
-    details = `${mxRecords.length} servidores MX con ${priorities.length} nivel(es) de prioridad. Buena redundancia.`;
+  if (mxRecords.length === 1 && totalIps > 1) {
+    details = `Un servidor MX con ${totalIps} IPs. Hay redundancia a nivel IP.`;
+  } else if (mxRecords.length === 1 && totalIps <= 1) {
+    details = 'Solo hay un servidor MX sin redundancia de IPs. Se recomienda agregar al menos uno de respaldo.';
+  } else if (hasRedundancy && priorities.length > 1) {
+    details = `${mxRecords.length} servidores MX con ${priorities.length} niveles de prioridad. Buena redundancia.`;
+  } else if (mxRecords.length > 1) {
+    details = `${mxRecords.length} servidores MX con la misma prioridad. Considerá variar prioridades para mejor failover.`;
   } else {
-    details = `${mxRecords.length} servidores MX pero con la misma prioridad. Considerá variar prioridades.`;
+    details = `${mxRecords.length} servidor(es) MX configurado(s).`;
   }
 
   return {
