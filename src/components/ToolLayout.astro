@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Header from './Header.astro';
+import Sidebar from './Sidebar.astro';
 import Footer from './Footer.astro';
 
 interface Props {
@@ -15,22 +15,26 @@ const { title, description, heading, subheading } = Astro.props;
 
 <BaseLayout title={title} description={description}>
   <slot name="head" slot="head" />
-  <Header />
-  <main class="tool-page" id="main-content">
-    <div class="container">
-      <div class="tool-header">
-        <h1>{heading}</h1>
-        <p>{subheading}</p>
-      </div>
-      <div class="tool-form">
-        <slot name="form" />
-      </div>
-      <div class="tool-results" id="results">
-        <slot name="results" />
-      </div>
+  <div class="app-layout">
+    <Sidebar />
+    <div class="app-content">
+      <main class="tool-page" id="main-content">
+        <div class="container">
+          <div class="tool-header">
+            <h1>{heading}</h1>
+            <p>{subheading}</p>
+          </div>
+          <div class="tool-form">
+            <slot name="form" />
+          </div>
+          <div class="tool-results" id="results">
+            <slot name="results" />
+          </div>
+        </div>
+      </main>
+      <Footer />
     </div>
-  </main>
-  <Footer />
+  </div>
   <slot />
 </BaseLayout>
 

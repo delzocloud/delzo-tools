@@ -448,6 +448,24 @@ label {
   }
 }
 
+/* === App layout (sidebar + content) === */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.app-content {
+  flex: 1;
+  margin-left: 240px;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .app-content {
+    margin-left: 0;
+  }
+}
+
 /* === Responsive === */
 @media (max-width: 768px) {
   .container {

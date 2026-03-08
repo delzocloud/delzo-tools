@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Header from '../components/Header.astro';
+import Sidebar from '../components/Sidebar.astro';
 import Footer from '../components/Footer.astro';
 ---
 
@@ -8,16 +8,20 @@ import Footer from '../components/Footer.astro';
   title="Página no encontrada"
   description="La página que buscás no existe."
 >
-  <Header />
-  <main class="not-found" id="main-content">
-    <div class="container">
-      <div class="error-code">404</div>
-      <h1>Página no encontrada</h1>
-      <p>La página que buscás no existe o fue movida.</p>
-      <a href="/" class="btn">Volver al inicio</a>
+  <div class="app-layout">
+    <Sidebar />
+    <div class="app-content">
+      <main class="not-found" id="main-content">
+        <div class="container">
+          <div class="error-code">404</div>
+          <h1>Página no encontrada</h1>
+          <p>La página que buscás no existe o fue movida.</p>
+          <a href="/" class="btn">Volver al inicio</a>
+        </div>
+      </main>
+      <Footer />
     </div>
-  </main>
-  <Footer />
+  </div>
 </BaseLayout>
 
 <style>

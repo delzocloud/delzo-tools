@@ -1,0 +1,277 @@
+---
+const tools = [
+  { name: 'Site Report', href: '/site-report', icon: '📄', featured: true },
+  { name: 'DNS Lookup', href: '/dns-lookup', icon: '🔍' },
+  { name: 'Email Security', href: '/email-auth', icon: '📧' },
+  { name: 'CIDR Calculator', href: '/cidr-calculator', icon: '🧮' },
+  { name: 'IP Geolocation', href: '/ip-geolocation', icon: '🌐' },
+  { name: 'Security Headers', href: '/security-headers', icon: '🛡️' },
+  { name: 'Cert Monitor', href: '/cert-monitor', icon: '🔐' },
+  { name: 'Blacklist Checker', href: '/blacklist-checker', icon: '🚫' },
+  { name: 'DNS Propagation', href: '/dns-propagation', icon: '🌍' },
+  { name: 'Cert Expiry', href: '/cert-expiry', icon: '⏰' },
+  { name: 'MX Analyzer', href: '/mx-analyzer', icon: '📬' },
+];
+
+const currentPath = Astro.url.pathname;
+---
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-top">
+    <a href="/" class="sidebar-wordmark">
+      <span class="wm-delzo">delzo</span><span class="wm-cloud">.cloud</span>
+      <span class="wm-sep">/</span>
+      <span class="wm-tools">tools</span>
+    </a>
+  </div>
+
+  <nav class="sidebar-nav">
+    {tools.map((tool, i) => (
+      <Fragment>
+        {i === 1 && <div class="sidebar-sep" />}
+        <a
+          href={tool.href}
+          class:list={[
+            'sidebar-link',
+            { active: currentPath === tool.href },
+            { featured: tool.featured },
+          ]}
+        >
+          <span class="sidebar-icon">{tool.icon}</span>
+          {tool.name}
+        </a>
+      </Fragment>
+    ))}
+  </nav>
+
+  <div class="sidebar-footer">
+    <a href="https://delzo.cloud" target="_blank" rel="noopener" class="sidebar-footer-link">
+      delzo.cloud
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4.5 1.5H2a.5.5 0 00-.5.5v8a.5.5 0 00.5.5h8a.5.5 0 00.5-.5V7.5M7 1.5h3.5V5M5.5 6.5l5-5"/>
+      </svg>
+    </a>
+  </div>
+</aside>
+
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<button class="sidebar-hamburger" id="sidebar-hamburger" aria-label="Abrir menú">
+  <span></span><span></span><span></span>
+</button>
+
+<style>
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 240px;
+    background: var(--blanco);
+    border-right: 1px solid var(--borde);
+    display: flex;
+    flex-direction: column;
+    z-index: 200;
+    overflow-y: auto;
+  }
+
+  .sidebar-top {
+    padding: 1.25rem 1.25rem 1rem;
+  }
+
+  .sidebar-wordmark {
+    font-size: 1.05rem;
+    text-decoration: none;
+    letter-spacing: -0.03em;
+    display: flex;
+    align-items: baseline;
+  }
+
+  .wm-delzo {
+    font-weight: 700;
+    color: var(--gris-oscuro);
+  }
+
+  .wm-cloud {
+    font-weight: 400;
+    color: var(--verde);
+  }
+
+  .wm-sep {
+    color: var(--gris-claro);
+    margin: 0 0.25rem;
+    font-weight: 300;
+  }
+
+  .wm-tools {
+    font-weight: 500;
+    color: var(--gris-medio);
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .sidebar-sep {
+    height: 1px;
+    background: var(--borde);
+    margin: 0.4rem 0.5rem;
+  }
+
+  .sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--gris-medio);
+    text-decoration: none;
+    transition: color 0.15s ease, background 0.15s ease;
+  }
+
+  .sidebar-link:hover {
+    color: var(--gris-oscuro);
+    background: var(--fondo-alt);
+  }
+
+  .sidebar-link.active {
+    color: var(--verde-dark);
+    background: rgba(16, 185, 129, 0.08);
+  }
+
+  .sidebar-link.featured {
+    color: var(--verde-dark);
+    background: rgba(16, 185, 129, 0.07);
+    font-weight: 600;
+  }
+
+  .sidebar-link.featured:hover {
+    background: rgba(16, 185, 129, 0.12);
+  }
+
+  .sidebar-link.featured.active {
+    background: rgba(16, 185, 129, 0.14);
+  }
+
+  .sidebar-icon {
+    font-size: 1rem;
+    width: 1.25rem;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .sidebar-footer {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--borde);
+  }
+
+  .sidebar-footer-link {
+    font-size: 0.8rem;
+    color: var(--gris-claro);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: color 0.15s ease;
+  }
+
+  .sidebar-footer-link:hover {
+    color: var(--verde);
+  }
+
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(31, 41, 55, 0.4);
+    z-index: 190;
+  }
+
+  .sidebar-hamburger {
+    display: none;
+    position: fixed;
+    top: 0.85rem;
+    left: 0.85rem;
+    z-index: 210;
+    width: 40px;
+    height: 40px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    background: var(--blanco);
+    border: 1px solid var(--borde);
+    border-radius: 10px;
+    cursor: pointer;
+    padding: 8px;
+    box-shadow: var(--sombra-neutra);
+  }
+
+  .sidebar-hamburger span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: var(--gris-oscuro);
+    border-radius: 2px;
+    transition: all 0.3s var(--ease-out-expo);
+    transform-origin: center;
+  }
+
+  .sidebar-hamburger.is-active span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+  }
+
+  .sidebar-hamburger.is-active span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .sidebar-hamburger.is-active span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+
+  @media (max-width: 768px) {
+    .sidebar {
+      transform: translateX(-100%);
+      transition: transform 0.3s var(--ease-out-expo);
+    }
+
+    .sidebar.sidebar-open {
+      transform: translateX(0);
+    }
+
+    .sidebar-overlay.sidebar-open {
+      display: block;
+    }
+
+    .sidebar-hamburger {
+      display: flex;
+    }
+  }
+</style>
+
+<script>
+  const hamburger = document.getElementById('sidebar-hamburger');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+
+  function toggleSidebar() {
+    hamburger?.classList.toggle('is-active');
+    sidebar?.classList.toggle('sidebar-open');
+    overlay?.classList.toggle('sidebar-open');
+  }
+
+  function closeSidebar() {
+    hamburger?.classList.remove('is-active');
+    sidebar?.classList.remove('sidebar-open');
+    overlay?.classList.remove('sidebar-open');
+  }
+
+  hamburger?.addEventListener('click', toggleSidebar);
+  overlay?.addEventListener('click', closeSidebar);
+</script>
