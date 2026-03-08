@@ -123,7 +123,68 @@ import ToolLayout from '../components/ToolLayout.astro';
     }
 
     .analysis-grid {
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .analysis-item {
+      text-align: left;
+    }
+
+    .analysis-label {
+      font-size: 0.72rem;
+    }
+
+    .analysis-value {
+      font-size: 0.95rem;
+    }
+
+    .analysis-detail {
+      text-align: left;
+    }
+
+    .results-card {
+      padding: 0 1rem;
+    }
+
+    .results-table :global(thead) {
+      display: none;
+    }
+
+    .results-table :global(tr) {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem 1rem;
+      padding: 0.85rem 0;
+      border-bottom: 1px solid var(--borde);
+    }
+
+    .results-table :global(tr:last-child) {
+      border-bottom: none;
+    }
+
+    .results-table :global(td) {
+      border: none;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .results-table :global(td::before) {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--gris-claro);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .results-table :global(td:nth-child(1)::before) { content: "Prioridad: "; }
+    .results-table :global(td:nth-child(2)::before) { content: "Host: "; }
+    .results-table :global(td:nth-child(3)::before) { content: "IPs: "; }
+    .results-table :global(td:nth-child(4)::before) { content: ""; }
+
+    .results-table :global(td:nth-child(2)) {
+      flex-basis: 100%;
     }
   }
 </style>
