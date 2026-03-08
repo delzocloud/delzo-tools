@@ -91,8 +91,8 @@ import ToolLayout from '../components/ToolLayout.astro';
     color: var(--gris-medio);
   }
 
-  .badge-mobile {
-    display: none;
+  :global(.badge-mobile) {
+    display: none !important;
   }
 
   @media (max-width: 600px) {
@@ -141,8 +141,8 @@ import ToolLayout from '../components/ToolLayout.astro';
       display: none;
     }
 
-    .badge-mobile {
-      display: inline-flex;
+    :global(.badge-mobile) {
+      display: inline-flex !important;
     }
   }
 </style>
@@ -201,7 +201,7 @@ import ToolLayout from '../components/ToolLayout.astro';
 
         tbody.innerHTML += `
           <tr>
-            <td>${escapeHtml(h.name)}<span class="badge badge-${h.status} badge-mobile">${statusLabels[h.status]}</span></td>
+            <td><span class="header-name-text">${escapeHtml(h.name)}</span><span class="badge badge-${h.status} badge-mobile">${statusLabels[h.status]}</span></td>
             <td class="td-status"><span class="badge badge-${h.status}">${statusLabels[h.status]}</span></td>
             <td><div class="header-detail">${escapeHtml(h.detail)}</div>${valueHtml}</td>
           </tr>
