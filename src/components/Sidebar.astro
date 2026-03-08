@@ -197,7 +197,7 @@ const currentPath = Astro.url.pathname;
     display: none;
     position: fixed;
     top: 0.85rem;
-    left: 0.85rem;
+    right: 0.85rem;
     z-index: 210;
     width: 40px;
     height: 40px;
@@ -243,6 +243,10 @@ const currentPath = Astro.url.pathname;
 
     .sidebar.sidebar-open {
       transform: translateX(0);
+    }
+
+    .sidebar-top {
+      padding-top: 1.5rem;
     }
 
     .sidebar-overlay.sidebar-open {

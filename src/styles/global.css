@@ -463,6 +463,7 @@ label {
 @media (max-width: 768px) {
   .app-content {
     margin-left: 0;
+    padding-top: 3.5rem;
   }
 }
 
