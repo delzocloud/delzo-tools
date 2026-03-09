@@ -125,35 +125,6 @@ import ToolLayout from '../components/ToolLayout.astro';
     padding-left: 0.2rem;
   }
 
-  .badge-ok {
-    display: inline-block;
-    padding: 0.15rem 0.5rem;
-    border-radius: 6px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    background: rgba(16, 185, 129, 0.1);
-    color: #059669;
-  }
-
-  .badge-err {
-    display: inline-block;
-    padding: 0.15rem 0.5rem;
-    border-radius: 6px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    background: rgba(239, 68, 68, 0.1);
-    color: #dc2626;
-  }
-
-  .badge-timeout {
-    display: inline-block;
-    padding: 0.15rem 0.5rem;
-    border-radius: 6px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    background: rgba(245, 158, 11, 0.1);
-    color: #d97706;
-  }
 
   @media (max-width: 600px) {
     .form-row {
@@ -257,9 +228,9 @@ import ToolLayout from '../components/ToolLayout.astro';
       tbody.innerHTML = data.resolvers.map((r: any) => {
         const answers = r.answers.length > 0 ? r.answers.map((a: string) => '<code>' + esc(a) + '</code>').join('<br>') : '—';
         let badge = '';
-        if (r.status === 'ok') badge = '<span class="badge-ok">OK</span>';
-        else if (r.status === 'timeout') badge = '<span class="badge-timeout">Timeout</span>';
-        else badge = '<span class="badge-err">Error</span>';
+        if (r.status === 'ok') badge = '<span class="badge badge-pass">✓ OK</span>';
+        else if (r.status === 'timeout') badge = '<span class="badge badge-warning">⚠ Timeout</span>';
+        else badge = '<span class="badge badge-fail">✗ Error</span>';
 
         return `<tr>
           <td><strong>${esc(r.name)}</strong></td>
