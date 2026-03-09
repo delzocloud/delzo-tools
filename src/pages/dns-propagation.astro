@@ -4,9 +4,9 @@ import ToolLayout from '../components/ToolLayout.astro';
 
 <ToolLayout
   title="DNS Propagation Checker"
-  description="Verificá la propagación DNS de un dominio consultando 8 resolvers públicos en paralelo."
+  description="Verificá la propagación DNS de un dominio consultando 4 resolvers públicos en paralelo."
   heading="DNS Propagation Checker"
-  subheading="Consultá un dominio contra 8 resolvers DNS públicos para verificar propagación."
+  subheading="Consultá un dominio contra 4 resolvers DNS públicos para verificar propagación."
 >
   <div slot="form">
     <div class="form-row">
@@ -38,7 +38,10 @@ import ToolLayout from '../components/ToolLayout.astro';
   </div>
 
   <div slot="results">
-    <div id="status-banner" style="display:none;"></div>
+    <div class="summary-card card" id="summary-card" style="display:none;">
+      <div class="summary-header" id="summary-header"></div>
+      <div class="summary-answers" id="summary-answers"></div>
+    </div>
     <div class="results-card card" id="results-card" style="display:none;">
       <table class="results-table">
         <thead>
@@ -74,24 +77,52 @@ import ToolLayout from '../components/ToolLayout.astro';
     overflow: hidden;
   }
 
-  .status-banner {
-    padding: 0.85rem 1rem;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 0.92rem;
+  .summary-card {
     margin-bottom: 1rem;
   }
 
-  .banner-ok {
-    background: rgba(16, 185, 129, 0.1);
-    color: #059669;
-    border: 1px solid rgba(16, 185, 129, 0.2);
+  .summary-header {
+    font-weight: 600;
+    font-size: 0.92rem;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--borde);
   }
 
-  .banner-warn {
-    background: rgba(245, 158, 11, 0.1);
+  .summary-header.consistent {
+    color: #059669;
+  }
+
+  .summary-header.inconsistent {
     color: #d97706;
-    border: 1px solid rgba(245, 158, 11, 0.2);
+  }
+
+  .summary-answers {
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  :global(.answer-group) {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  :global(.answer-value) {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    background: var(--fondo-alt);
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    word-break: break-all;
+    line-height: 1.5;
+  }
+
+  :global(.answer-resolvers) {
+    font-size: 0.78rem;
+    color: var(--gris-medio);
+    padding-left: 0.2rem;
   }
 
   .badge-ok {
@@ -147,7 +178,9 @@ import ToolLayout from '../components/ToolLayout.astro';
   const btn = document.getElementById('check-btn')!;
   const loading = document.getElementById('loading')!;
   const error = document.getElementById('error')!;
-  const banner = document.getElementById('status-banner')!;
+  const summaryCard = document.getElementById('summary-card')!;
+  const summaryHeader = document.getElementById('summary-header')!;
+  const summaryAnswers = document.getElementById('summary-answers')!;
   const card = document.getElementById('results-card')!;
   const tbody = document.getElementById('results-body')!;
 
@@ -157,7 +190,7 @@ import ToolLayout from '../components/ToolLayout.astro';
 
     error.classList.remove('active');
     card.style.display = 'none';
-    banner.style.display = 'none';
+    summaryCard.style.display = 'none';
     loading.classList.add('active');
 
     if (!domain) {
@@ -179,15 +212,48 @@ import ToolLayout from '../components/ToolLayout.astro';
         return;
       }
 
-      if (data.consistent) {
-        banner.className = 'status-banner banner-ok';
-        banner.textContent = 'Propagación completa — todos los resolvers coinciden';
-      } else {
-        banner.className = 'status-banner banner-warn';
-        banner.textContent = 'Inconsistencia detectada — los resolvers no coinciden';
-      }
-      banner.style.display = 'block';
+      // Build summary: group resolvers by their answer set
+      const okResolvers = data.resolvers.filter((r: any) => r.status === 'ok');
+      const answerGroups: Map<string, string[]> = new Map();
 
+      for (const r of okResolvers) {
+        const key = r.answers.length > 0 ? r.answers.join(', ') : '(sin respuesta)';
+        if (!answerGroups.has(key)) answerGroups.set(key, []);
+        answerGroups.get(key)!.push(r.name);
+      }
+
+      const allMatch = answerGroups.size <= 1 && okResolvers.length > 0;
+
+      summaryHeader.className = `summary-header ${allMatch ? 'consistent' : 'inconsistent'}`;
+      summaryHeader.textContent = allMatch
+        ? `${okResolvers.length}/${data.resolvers.length} resolvers coinciden`
+        : `Los resolvers devuelven respuestas diferentes`;
+
+      let groupsHtml = '';
+      for (const [answer, resolvers] of answerGroups) {
+        groupsHtml += `
+          <div class="answer-group">
+            <div class="answer-value">${esc(answer)}</div>
+            <div class="answer-resolvers">${resolvers.join(', ')}</div>
+          </div>
+        `;
+      }
+
+      const errResolvers = data.resolvers.filter((r: any) => r.status !== 'ok');
+      if (errResolvers.length > 0) {
+        const errNames = errResolvers.map((r: any) => r.name).join(', ');
+        groupsHtml += `
+          <div class="answer-group">
+            <div class="answer-value" style="color:var(--gris-medio);">(error o timeout)</div>
+            <div class="answer-resolvers">${esc(errNames)}</div>
+          </div>
+        `;
+      }
+
+      summaryAnswers.innerHTML = groupsHtml;
+      summaryCard.style.display = 'block';
+
+      // Table
       tbody.innerHTML = data.resolvers.map((r: any) => {
         const answers = r.answers.length > 0 ? r.answers.map((a: string) => '<code>' + esc(a) + '</code>').join('<br>') : '—';
         let badge = '';

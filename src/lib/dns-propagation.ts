@@ -1,12 +1,8 @@
 const RESOLVERS = [
   { name: 'Cloudflare', url: 'https://cloudflare-dns.com/dns-query' },
   { name: 'Google', url: 'https://dns.google/resolve' },
-  { name: 'Quad9', url: 'https://dns.quad9.net:5053/dns-query' },
   { name: 'OpenDNS', url: 'https://doh.opendns.com/dns-query' },
-  { name: 'AdGuard', url: 'https://dns.adguard-dns.com/dns-query' },
-  { name: 'CleanBrowsing', url: 'https://doh.cleanbrowsing.org/doh/security-filter' },
-  { name: 'Mullvad', url: 'https://dns.mullvad.net/dns-query' },
-  { name: 'NextDNS', url: 'https://dns.nextdns.io/dns-query' },
+  { name: 'Quad9', url: 'https://dns.quad9.net:5053/dns-query' },
 ];
 
 const RECORD_TYPES: Record<string, number> = {
