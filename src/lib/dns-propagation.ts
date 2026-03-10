@@ -165,6 +165,12 @@ function parseDnsResponse(data: ArrayBuffer, queryType: number): string[] {
   return answers.sort();
 }
 
+// Normalize a DNS answer string: strip surrounding quotes that some JSON
+// resolvers add to TXT record data (e.g. `"v=spf1 ..."` → `v=spf1 ...`).
+function normalizeAnswer(answer: string): string {
+  return answer.replace(/^"(.*)"$/, '$1');
+}
+
 // --- Query functions ---
 
 async function queryResolverJson(
@@ -188,7 +194,7 @@ async function queryResolverJson(
   }
 
   const data = await res.json();
-  const answers = (data.Answer || []).map((a: any) => a.data as string).sort();
+  const answers = (data.Answer || []).map((a: any) => normalizeAnswer(a.data as string)).sort();
   return { name: resolverName, answers, responseTime, status: 'ok' };
 }
 
