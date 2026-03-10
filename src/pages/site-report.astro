@@ -111,32 +111,33 @@ import ToolLayout from '../components/ToolLayout.astro';
     margin: 1.5rem 0;
   }
 
-  .summary-card {
+  :global(.summary-card) {
     padding: 1rem 1.25rem;
     border: 1px solid var(--borde);
     border-radius: 12px;
     background: var(--blanco);
   }
 
-  .summary-card-title {
+  :global(.summary-card-title) {
     font-size: 0.85rem;
+    font-weight: 700;
     color: var(--gris-medio);
     margin-bottom: 0.35rem;
   }
 
-  .summary-card-score {
+  :global(.summary-card-score) {
     font-size: 1.25rem;
     font-weight: 700;
     color: var(--gris-oscuro);
   }
 
-  .summary-card-grade {
+  :global(.summary-card-grade) {
     font-size: 0.85rem;
     font-weight: 600;
     margin-left: 0.5rem;
   }
 
-  .summary-card-info {
+  :global(.summary-card-info) {
     font-size: 0.85rem;
     color: var(--gris-medio);
     font-style: italic;
@@ -339,9 +340,6 @@ import ToolLayout from '../components/ToolLayout.astro';
 
       container.style.display = 'block';
       btn.removeAttribute('disabled');
-
-      // Auto-download PDF
-      generatePDF(data);
     } catch {
       clearInterval(progressInterval);
       progress.classList.remove('active');
@@ -351,8 +349,17 @@ import ToolLayout from '../components/ToolLayout.astro';
     }
   }
 
+  function tryGeneratePDF(data: any) {
+    try {
+      generatePDF(data);
+    } catch (e: any) {
+      alert('No se pudo generar el PDF. Asegurate de tener conexión y volvé a intentarlo.');
+      console.error('PDF generation error:', e);
+    }
+  }
+
   downloadBtn.addEventListener('click', () => {
-    if (reportData) generatePDF(reportData);
+    if (reportData) tryGeneratePDF(reportData);
   });
 
   btn.addEventListener('click', generate);
