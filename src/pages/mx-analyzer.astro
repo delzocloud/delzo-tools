@@ -68,24 +68,24 @@ import ToolLayout from '../components/ToolLayout.astro';
     padding: 1.25rem;
   }
 
-  .analysis-item {
+  :global(.analysis-item) {
     text-align: center;
   }
 
-  .analysis-label {
+  :global(.analysis-label) {
     font-size: 0.78rem;
     font-weight: 700;
     color: var(--gris-medio);
     margin-bottom: 0.25rem;
   }
 
-  .analysis-value {
+  :global(.analysis-value) {
     font-size: 1.1rem;
     font-weight: 700;
     color: var(--gris-oscuro);
   }
 
-  .analysis-detail {
+  :global(.analysis-detail) {
     grid-column: 1 / -1;
     padding-top: 0.75rem;
     border-top: 1px solid var(--borde);
@@ -94,7 +94,7 @@ import ToolLayout from '../components/ToolLayout.astro';
     text-align: center;
   }
 
-  .badge-provider {
+  :global(.badge-provider) {
     display: inline-flex;
     flex-direction: column;
     align-items: center;
@@ -107,30 +107,30 @@ import ToolLayout from '../components/ToolLayout.astro';
     color: #4f46e5;
   }
 
-  .provider-logo {
+  :global(.provider-logo) {
     width: 16px;
     height: 16px;
     border-radius: 2px;
     flex-shrink: 0;
   }
 
-  .analysis-provider {
+  :global(.analysis-provider) {
     display: inline-flex;
     flex-direction: column;
     align-items: center;
     gap: 0.3rem;
   }
 
-  .analysis-provider .provider-logo {
+  :global(.analysis-provider) :global(.provider-logo) {
     width: 24px;
     height: 24px;
   }
 
-  .redundancy-yes {
+  :global(.redundancy-yes) {
     color: #059669;
   }
 
-  .redundancy-no {
+  :global(.redundancy-no) {
     color: #d97706;
   }
 
