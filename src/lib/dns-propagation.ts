@@ -168,7 +168,9 @@ function parseDnsResponse(data: ArrayBuffer, queryType: number): string[] {
 // Normalize a DNS answer string: strip surrounding quotes that some JSON
 // resolvers add to TXT record data (e.g. `"v=spf1 ..."` → `v=spf1 ...`).
 function normalizeAnswer(answer: string): string {
-  return answer.replace(/^"(.*)"$/, '$1');
+  return answer
+    .replace(/^"(.*)"$/, '$1')  // strip surrounding quotes (TXT records)
+    .replace(/\.$/, '');         // strip trailing dot (MX, CNAME, NS hostnames)
 }
 
 // --- Query functions ---
