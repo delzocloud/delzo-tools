@@ -74,6 +74,7 @@ import ToolLayout from '../components/ToolLayout.astro';
 
   .analysis-label {
     font-size: 0.78rem;
+    font-weight: 700;
     color: var(--gris-medio);
     margin-bottom: 0.25rem;
   }
@@ -94,13 +95,28 @@ import ToolLayout from '../components/ToolLayout.astro';
   }
 
   .badge-provider {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
     padding: 0.15rem 0.5rem;
     border-radius: 6px;
     font-size: 0.78rem;
     font-weight: 600;
     background: rgba(99, 102, 241, 0.1);
     color: #4f46e5;
+  }
+
+  .provider-logo {
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .analysis-provider {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
   }
 
   .redundancy-yes {
@@ -199,6 +215,23 @@ import ToolLayout from '../components/ToolLayout.astro';
   const card = document.getElementById('results-card')!;
   const tbody = document.getElementById('results-body')!;
 
+  const PROVIDER_DOMAINS: Record<string, string> = {
+    'Google Workspace': 'google.com',
+    'Microsoft 365': 'microsoft.com',
+    'Cloudflare': 'cloudflare.com',
+    'Zoho Mail': 'zoho.com',
+    'Proofpoint': 'proofpoint.com',
+    'Mimecast': 'mimecast.com',
+    'Barracuda': 'barracudanetworks.com',
+    'GoDaddy': 'godaddy.com',
+  };
+
+  function providerLogo(name: string): string {
+    const domain = PROVIDER_DOMAINS[name];
+    if (!domain) return '';
+    return `<img src="https://www.google.com/s2/favicons?domain=${domain}&sz=32" class="provider-logo" alt="${name}">`;
+  }
+
   async function check() {
     const domain = domainInput.value.trim();
 
@@ -233,7 +266,7 @@ import ToolLayout from '../components/ToolLayout.astro';
       analysisGrid.innerHTML = `
         <div class="analysis-item">
           <div class="analysis-label">Proveedor</div>
-          <div class="analysis-value">${esc(a.provider)}</div>
+          <div class="analysis-value"><span class="analysis-provider">${providerLogo(a.provider)}${esc(a.provider)}</span></div>
         </div>
         <div class="analysis-item">
           <div class="analysis-label">Servidores MX</div>
@@ -252,7 +285,7 @@ import ToolLayout from '../components/ToolLayout.astro';
           <td><strong>${r.priority}</strong></td>
           <td><code>${esc(r.hostname)}</code></td>
           <td>${r.ips.length > 0 ? r.ips.map((ip: string) => '<code>' + esc(ip) + '</code>').join('<br>') : '—'}</td>
-          <td><span class="badge-provider">${esc(r.provider)}</span></td>
+          <td><span class="badge-provider">${providerLogo(r.provider)}${esc(r.provider)}</span></td>
         </tr>
       `).join('');
 

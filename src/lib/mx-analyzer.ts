@@ -23,11 +23,12 @@ export interface MxReport {
 const PROVIDERS: [RegExp, string][] = [
   [/\.(google\.com|googlemail\.com)\.?$/i, 'Google Workspace'],
   [/\.(outlook\.com|protection\.outlook\.com)\.?$/i, 'Microsoft 365'],
+  [/\.cloudflare\.net\.?$/i, 'Cloudflare'],
   [/\.pphosted\.com\.?$/i, 'Proofpoint'],
   [/\.mimecast\.com\.?$/i, 'Mimecast'],
   [/\.barracudanetworks\.com\.?$/i, 'Barracuda'],
   [/\.secureserver\.net\.?$/i, 'GoDaddy'],
-  [/\.zoho\.com\.?$/i, 'Zoho'],
+  [/\.zoho\.com\.?$/i, 'Zoho Mail'],
 ];
 
 function detectProvider(hostname: string): string {
