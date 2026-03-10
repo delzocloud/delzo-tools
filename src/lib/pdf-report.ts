@@ -1,7 +1,6 @@
-// Client-side PDF generation using jsPDF + jspdf-autotable (loaded via CDN)
-// This file is included as an inline <script> in site-report.astro
-
-declare const jspdf: any;
+// Client-side PDF generation using jsPDF + jspdf-autotable
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 
 interface ReportData {
   domain: string;
@@ -15,7 +14,6 @@ interface ReportData {
 }
 
 export function generatePDF(data: ReportData) {
-  const { jsPDF } = jspdf;
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
