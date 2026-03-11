@@ -1,0 +1,450 @@
+---
+import ToolLayout from '../components/ToolLayout.astro';
+---
+
+<ToolLayout
+  title="Latency Checker"
+  description="Medí el tiempo de respuesta (TTFB) de cualquier sitio web desde múltiples ubicaciones globales."
+  heading="Latency Checker"
+  subheading="Medí el tiempo de respuesta desde diferentes ubicaciones alrededor del mundo."
+>
+  <div slot="form">
+    <div class="form-row">
+      <div class="input-group">
+        <label for="url-input">URL o dominio</label>
+        <input
+          type="text"
+          id="url-input"
+          placeholder="ejemplo.com"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+      <button class="btn" id="check-btn">Medir</button>
+    </div>
+    <div class="loading" id="loading"><div class="spinner"></div> Midiendo latencia desde múltiples ubicaciones...</div>
+    <div class="error-msg" id="error"></div>
+  </div>
+
+  <div slot="results" id="results-container" style="display:none;">
+    <div class="summary-cards">
+      <div class="summary-card card fastest">
+        <div class="summary-label">Más rápido</div>
+        <div class="summary-value" id="fastest-value">--</div>
+        <div class="summary-location" id="fastest-location">--</div>
+      </div>
+      <div class="summary-card card average">
+        <div class="summary-label">Promedio global</div>
+        <div class="summary-value" id="average-value">--</div>
+        <div class="summary-location">Todos los edges</div>
+      </div>
+      <div class="summary-card card slowest">
+        <div class="summary-label">Más lento</div>
+        <div class="summary-value" id="slowest-value">--</div>
+        <div class="summary-location" id="slowest-location">--</div>
+      </div>
+    </div>
+
+    <div class="latency-chart card">
+      <div class="chart-header">
+        <h3>Latencia por región</h3>
+        <div class="chart-legend">
+          <span class="legend-item fast"><span class="dot"></span>Rápido (&lt;100ms)</span>
+          <span class="legend-item medium"><span class="dot"></span>Medio (100-500ms)</span>
+          <span class="legend-item slow"><span class="dot"></span>Lento (&gt;500ms)</span>
+        </div>
+      </div>
+      <div class="chart-body" id="chart-body"></div>
+    </div>
+
+    <div class="insights card" id="insights">
+      <h3>Análisis</h3>
+      <div class="insights-content" id="insights-content"></div>
+    </div>
+  </div>
+</ToolLayout>
+
+<style>
+  .form-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+  }
+
+  .input-group {
+    flex: 1;
+  }
+
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .summary-card {
+    padding: 1.25rem;
+    text-align: center;
+    border-left: 3px solid var(--borde);
+  }
+
+  .summary-card.fastest {
+    border-left-color: #10B981;
+  }
+
+  .summary-card.average {
+    border-left-color: #6B7280;
+  }
+
+  .summary-card.slowest {
+    border-left-color: #EF4444;
+  }
+
+  .summary-label {
+    font-size: 0.75rem;
+    color: var(--gris-medio);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+  }
+
+  .summary-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--gris-oscuro);
+    font-family: var(--font-mono);
+  }
+
+  .summary-location {
+    font-size: 0.85rem;
+    color: var(--gris-medio);
+    margin-top: 0.25rem;
+  }
+
+  .latency-chart {
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .chart-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .chart-legend {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    color: var(--gris-medio);
+  }
+
+  .legend-item .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .legend-item.fast .dot { background: #10B981; }
+  .legend-item.medium .dot { background: #F59E0B; }
+  .legend-item.slow .dot { background: #EF4444; }
+
+  .chart-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .latency-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .region-info {
+    width: 140px;
+    flex-shrink: 0;
+  }
+
+  .region-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--gris-oscuro);
+  }
+
+  .region-code {
+    font-size: 0.7rem;
+    color: var(--gris-medio);
+    font-family: var(--font-mono);
+  }
+
+  .bar-container {
+    flex: 1;
+    height: 28px;
+    background: var(--fondo-alt);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease-out;
+    position: relative;
+  }
+
+  .bar-fill.fast { background: linear-gradient(90deg, #10B981, #34D399); }
+  .bar-fill.medium { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
+  .bar-fill.slow { background: linear-gradient(90deg, #EF4444, #F87171); }
+
+  .bar-value {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+
+  .insights {
+    padding: 1.25rem;
+  }
+
+  .insights h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.75rem 0;
+  }
+
+  .insights-content {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--gris-oscuro);
+  }
+
+  .insight-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .insight-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 0.75rem;
+  }
+
+  .insight-icon.good {
+    background: #D1FAE5;
+    color: #065F46;
+  }
+
+  .insight-icon.warning {
+    background: #FEF3C7;
+    color: #92400E;
+  }
+
+  .insight-icon.info {
+    background: #DBEAFE;
+    color: #1E40AF;
+  }
+
+  @media (max-width: 600px) {
+    .form-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .form-row .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .summary-cards {
+      grid-template-columns: 1fr;
+    }
+
+    .chart-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .region-info {
+      width: 100px;
+    }
+
+    .region-name {
+      font-size: 0.8rem;
+    }
+  }
+</style>
+
+<script>
+  const urlInput = document.getElementById('url-input') as HTMLInputElement;
+  const btn = document.getElementById('check-btn')!;
+  const loading = document.getElementById('loading')!;
+  const error = document.getElementById('error')!;
+  const container = document.getElementById('results-container')!;
+
+  async function check() {
+    const url = urlInput.value.trim();
+
+    error.classList.remove('active');
+    container.style.display = 'none';
+    loading.classList.add('active');
+
+    if (!url) {
+      loading.classList.remove('active');
+      error.textContent = 'Ingresá una URL o dominio.';
+      error.classList.add('active');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/latency-checker?url=${encodeURIComponent(url)}`);
+      const data = await res.json();
+
+      loading.classList.remove('active');
+
+      if (data.error) {
+        error.textContent = data.error;
+        error.classList.add('active');
+        return;
+      }
+
+      // Summary cards
+      document.getElementById('fastest-value')!.textContent = `${data.fastest.latency}ms`;
+      document.getElementById('fastest-location')!.textContent = data.fastest.region;
+      
+      document.getElementById('average-value')!.textContent = `${data.average}ms`;
+      
+      document.getElementById('slowest-value')!.textContent = `${data.slowest.latency}ms`;
+      document.getElementById('slowest-location')!.textContent = data.slowest.region;
+
+      // Chart
+      const chartBody = document.getElementById('chart-body')!;
+      chartBody.innerHTML = '';
+
+      const maxLatency = Math.max(...data.results.map((r: any) => r.latency));
+
+      for (const result of data.results) {
+        const percentage = (result.latency / maxLatency) * 100;
+        const speedClass = result.latency < 100 ? 'fast' : result.latency < 500 ? 'medium' : 'slow';
+        const isCurrent = result.code === 'CUR';
+
+        chartBody.innerHTML += `
+          <div class="latency-row">
+            <div class="region-info">
+              <div class="region-name">${escapeHtml(result.region)} ${isCurrent ? '(Vos)' : ''}</div>
+              <div class="region-code">${result.code}</div>
+            </div>
+            <div class="bar-container">
+              <div class="bar-fill ${speedClass}" style="width: ${percentage}%">
+                <span class="bar-value">${result.latency}ms</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Insights
+      const insightsContent = document.getElementById('insights-content')!;
+      const latamLatency = data.results.find((r: any) => r.code === 'EZE')?.latency || data.average;
+      const usLatency = data.results.find((r: any) => r.code === 'MIA')?.latency || data.average;
+      const ratio = usLatency / latamLatency;
+
+      let insightsHtml = '';
+      
+      if (data.fastest.latency < 100) {
+        insightsHtml += `
+          <div class="insight-item">
+            <span class="insight-icon good">✓</span>
+            <span>Excelente latencia desde ${data.fastest.region}: ${data.fastest.latency}ms. El sitio responde muy rápido.</span>
+          </div>
+        `;
+      } else if (data.fastest.latency < 300) {
+        insightsHtml += `
+          <div class="insight-item">
+            <span class="insight-icon good">✓</span>
+            <span>Buena latencia desde ${data.fastest.region}: ${data.fastest.latency}ms.</span>
+          </div>
+        `;
+      } else {
+        insightsHtml += `
+          <div class="insight-item">
+            <span class="insight-icon warning">!</span>
+            <span>Latencia alta: ${data.fastest.latency}ms desde ${data.fastest.region}. Considerá usar un CDN.</span>
+          </div>
+        `;
+      }
+
+      if (ratio > 2) {
+        insightsHtml += `
+          <div class="insight-item">
+            <span class="insight-icon info">i</span>
+            <span>El sitio es ${ratio.toFixed(1)}x más lento desde USA que desde LATAM. Revisá tu configuración de CDN.</span>
+          </div>
+        `;
+      } else if (ratio < 0.8) {
+        insightsHtml += `
+          <div class="insight-item">
+            <span class="insight-icon good">✓</span>
+            <span>Distribución global balanceada. El sitio responde bien desde todas las regiones.</span>
+          </div>
+        `;
+      }
+
+      if (data.slowest.latency > data.fastest.latency * 3) {
+        insightsHtml += `
+          <div class="insight-item">
+            <span class="insight-icon warning">!</span>
+            <span>Gran diferencia entre regiones (${data.slowest.latency}ms vs ${data.fastest.latency}ms). Considerá usar un CDN global como Cloudflare.</span>
+          </div>
+        `;
+      }
+
+      insightsContent.innerHTML = insightsHtml;
+
+      container.style.display = 'block';
+    } catch {
+      loading.classList.remove('active');
+      error.textContent = 'Error de conexión. Intentá de nuevo.';
+      error.classList.add('active');
+    }
+  }
+
+  function escapeHtml(str: string): string {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  btn.addEventListener('click', check);
+  urlInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') check();
+  });
+</script>
