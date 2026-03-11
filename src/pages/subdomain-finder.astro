@@ -1,0 +1,299 @@
+---
+import ToolLayout from '../components/ToolLayout.astro';
+---
+
+<ToolLayout
+  title="Subdomain Finder"
+  description="Descubrí subdominios de cualquier dominio usando Certificate Transparency logs. Gratis y sin API keys."
+  heading="Subdomain Finder"
+  subheading="Encontrá subdominios públicos desde Certificate Transparency logs (crt.sh)."
+>
+  <div slot="form">
+    <div class="form-row">
+      <div class="input-group">
+        <label for="domain-input">Dominio</label>
+        <input
+          type="text"
+          id="domain-input"
+          placeholder="ejemplo.com"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+      <button class="btn" id="find-btn">Buscar</button>
+    </div>
+    <div class="loading" id="loading"><div class="spinner"></div> Buscando subdominios en crt.sh...</div>
+    <div class="error-msg" id="error"></div>
+  </div>
+
+  <div slot="results" id="results-container" style="display:none;">
+    <div class="results-summary">
+      <div class="card">
+        <div class="summary-grid">
+          <div class="summary-stat">
+            <div class="stat-value" id="total-subdomains">0</div>
+            <div class="stat-label">Subdominios encontrados</div>
+          </div>
+          <div class="summary-stat">
+            <div class="stat-value" id="search-domain"></div>
+            <div class="stat-label">Dominio</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="subdomains-table-wrap card">
+      <table class="results-table" id="subdomains-table">
+        <thead>
+          <tr>
+            <th>Subdominio</th>
+            <th>Issuer</th>
+            <th>Expiración</th>
+          </tr>
+        </thead>
+        <tbody id="subdomains-body"></tbody>
+      </table>
+    </div>
+  </div>
+</ToolLayout>
+
+<style>
+  .form-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+  }
+
+  .input-group {
+    flex: 1;
+  }
+
+  .results-summary {
+    margin-bottom: 1.5rem;
+  }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    padding: 1rem;
+  }
+
+  .summary-stat {
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--gris-oscuro);
+    letter-spacing: -0.02em;
+  }
+
+  .stat-label {
+    font-size: 0.85rem;
+    color: var(--gris-medio);
+    margin-top: 0.25rem;
+  }
+
+  .subdomains-table-wrap {
+    overflow: hidden;
+    padding: 0;
+  }
+
+  .subdomains-table-wrap :global(.results-table td:first-child) {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .subdomain-link {
+    color: var(--verde);
+    text-decoration: none;
+  }
+
+  .subdomain-link:hover {
+    text-decoration: underline;
+  }
+
+  .issuer-name {
+    font-size: 0.8rem;
+    color: var(--gris-medio);
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .expiry-date {
+    font-size: 0.85rem;
+    color: var(--gris-oscuro);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--gris-medio);
+  }
+
+  .empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  @media (max-width: 600px) {
+    .form-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .form-row .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .summary-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .subdomains-table-wrap {
+      padding: 0.5rem;
+    }
+
+    .subdomains-table-wrap :global(.results-table thead) {
+      display: none;
+    }
+
+    .subdomains-table-wrap :global(.results-table tr) {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      padding: 0.85rem 0.5rem;
+      border-bottom: 1px solid var(--borde);
+    }
+
+    .subdomains-table-wrap :global(.results-table tr:last-child) {
+      border-bottom: none;
+    }
+
+    .subdomains-table-wrap :global(.results-table td) {
+      border: none;
+      padding: 0;
+    }
+
+    .subdomains-table-wrap :global(.results-table td:first-child) {
+      font-weight: 600;
+    }
+
+    .issuer-name {
+      max-width: none;
+    }
+  }
+</style>
+
+<script>
+  const domainInput = document.getElementById('domain-input') as HTMLInputElement;
+  const btn = document.getElementById('find-btn')!;
+  const loading = document.getElementById('loading')!;
+  const error = document.getElementById('error')!;
+  const container = document.getElementById('results-container')!;
+
+  async function find() {
+    const domain = domainInput.value.trim().toLowerCase();
+
+    error.classList.remove('active');
+    container.style.display = 'none';
+    loading.classList.add('active');
+
+    if (!domain) {
+      loading.classList.remove('active');
+      error.textContent = 'Ingresá un dominio.';
+      error.classList.add('active');
+      return;
+    }
+
+    if (!domain.includes('.') || domain.includes('/')) {
+      loading.classList.remove('active');
+      error.textContent = 'Dominio inválido. Ej: ejemplo.com';
+      error.classList.add('active');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/subdomain-finder?domain=${encodeURIComponent(domain)}`);
+      const data = await res.json();
+
+      loading.classList.remove('active');
+
+      if (data.error) {
+        error.textContent = data.error;
+        error.classList.add('active');
+        return;
+      }
+
+      // Update summary
+      document.getElementById('total-subdomains')!.textContent = String(data.total);
+      document.getElementById('search-domain')!.textContent = data.domain;
+
+      // Update table
+      const tbody = document.getElementById('subdomains-body')!;
+      tbody.innerHTML = '';
+
+      if (data.subdomains.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="3">
+              <div class="empty-state">
+                No se encontraron subdominios públicos para este dominio.
+              </div>
+            </td>
+          </tr>
+        `;
+      } else {
+        for (const sub of data.subdomains) {
+          const expiryText = sub.notAfter ? formatDate(sub.notAfter) : 'N/A';
+          tbody.innerHTML += `
+            <tr>
+              <td>
+                <a href="https://${escapeHtml(sub.name)}" target="_blank" rel="noopener" class="subdomain-link">
+                  ${escapeHtml(sub.name)}
+                </a>
+              </td>
+              <td><div class="issuer-name" title="${escapeHtml(sub.issuer)}">${escapeHtml(sub.issuer)}</div></td>
+              <td><span class="expiry-date">${expiryText}</span></td>
+            </tr>
+          `;
+        }
+      }
+
+      container.style.display = 'block';
+    } catch {
+      loading.classList.remove('active');
+      error.textContent = 'Error de conexión. Intentá de nuevo.';
+      error.classList.add('active');
+    }
+  }
+
+  function formatDate(dateStr: string): string {
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('es-AR', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    } catch {
+      return dateStr;
+    }
+  }
+
+  function escapeHtml(str: string): string {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  btn.addEventListener('click', find);
+  domainInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') find();
+  });
+</script>

@@ -1,0 +1,342 @@
+---
+import ToolLayout from '../components/ToolLayout.astro';
+---
+
+<ToolLayout
+  title="HTTP Trace"
+  description="Seguí la cadena de redirecciones HTTP de cualquier URL. Muestra status codes, headers y tiempos de respuesta."
+  heading="HTTP Trace"
+  subheading="Seguí la cadena de redirecciones HTTP hasta el destino final."
+>
+  <div slot="form">
+    <div class="form-row">
+      <div class="input-group">
+        <label for="url-input">URL o dominio</label>
+        <input
+          type="text"
+          id="url-input"
+          placeholder="ejemplo.com"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+      <button class="btn" id="trace-btn">Tracear</button>
+    </div>
+    <div class="loading" id="loading"><div class="spinner"></div> Siguiendo redirecciones...</div>
+    <div class="error-msg" id="error"></div>
+  </div>
+
+  <div slot="results" id="results-container" style="display:none;">
+    <div class="summary-card card" id="summary-card">
+      <div class="summary-item">
+        <div class="summary-label">Hops</div>
+        <div class="summary-value" id="total-hops"></div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">Tiempo total</div>
+        <div class="summary-value" id="total-time"></div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-label">Resultado</div>
+        <div class="summary-value" id="final-status"></div>
+      </div>
+    </div>
+
+    <div class="hops-container" id="hops-container"></div>
+  </div>
+</ToolLayout>
+
+<style>
+  .form-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+  }
+
+  .input-group {
+    flex: 1;
+  }
+
+  .summary-card {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .summary-item {
+    text-align: center;
+  }
+
+  .summary-label {
+    font-size: 0.75rem;
+    color: var(--gris-medio);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.35rem;
+  }
+
+  .summary-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--gris-oscuro);
+  }
+
+  .hops-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .hop-card {
+    background: var(--fondo-alt);
+    border: 1px solid var(--borde);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+  }
+
+  .hop-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .hop-step {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .step-number {
+    width: 24px;
+    height: 24px;
+    background: var(--verde);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .hop-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .status-code {
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+  }
+
+  .status-redirect {
+    background: #FEF3C7;
+    color: #92400E;
+  }
+
+  .status-success {
+    background: #D1FAE5;
+    color: #065F46;
+  }
+
+  .status-error {
+    background: #FEE2E2;
+    color: #991B1B;
+  }
+
+  .timing {
+    font-size: 0.8rem;
+    color: var(--gris-medio);
+  }
+
+  .hop-url {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--gris-oscuro);
+    word-break: break-all;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
+    background: white;
+    border-radius: 5px;
+    border: 1px solid var(--borde);
+  }
+
+  .hop-headers {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--borde);
+  }
+
+  .hop-headers-title {
+    font-size: 0.75rem;
+    color: var(--gris-medio);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+  }
+
+  .hop-headers-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .header-tag {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    background: white;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    border: 1px solid var(--borde);
+    color: var(--gris-oscuro);
+  }
+
+  .redirect-arrow {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0.25rem 0;
+  }
+
+  .redirect-arrow svg {
+    color: var(--verde);
+    opacity: 0.6;
+  }
+
+  @media (max-width: 600px) {
+    .form-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .form-row .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .summary-card {
+      grid-template-columns: 1fr;
+    }
+
+    .hop-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+  }
+</style>
+
+<script>
+  const urlInput = document.getElementById('url-input') as HTMLInputElement;
+  const btn = document.getElementById('trace-btn')!;
+  const loading = document.getElementById('loading')!;
+  const error = document.getElementById('error')!;
+  const container = document.getElementById('results-container')!;
+
+  async function trace() {
+    const url = urlInput.value.trim();
+
+    error.classList.remove('active');
+    container.style.display = 'none';
+    loading.classList.add('active');
+
+    if (!url) {
+      loading.classList.remove('active');
+      error.textContent = 'Ingresá una URL o dominio.';
+      error.classList.add('active');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/http-trace?url=${encodeURIComponent(url)}`);
+      const data = await res.json();
+
+      loading.classList.remove('active');
+
+      if (data.error) {
+        error.textContent = data.error;
+        error.classList.add('active');
+        return;
+      }
+
+      // Summary
+      document.getElementById('total-hops')!.textContent = String(data.total);
+      const totalTime = data.hops.reduce((sum: number, h: any) => sum + h.timing, 0);
+      document.getElementById('total-time')!.textContent = `${totalTime}ms`;
+      
+      const lastHop = data.hops[data.hops.length - 1];
+      const statusClass = lastHop.status >= 200 && lastHop.status < 300 ? 'status-success' : 
+                         lastHop.status >= 300 && lastHop.status < 400 ? 'status-redirect' : 'status-error';
+      document.getElementById('final-status')!.innerHTML = `<span class="status-code ${statusClass}">${lastHop.status}</span>`;
+
+      // Hops
+      const hopsContainer = document.getElementById('hops-container')!;
+      hopsContainer.innerHTML = '';
+
+      data.hops.forEach((hop: any, index: number) => {
+        const isRedirect = hop.status >= 300 && hop.status < 400;
+        const statusClass = hop.status >= 200 && hop.status < 300 ? 'status-success' : 
+                           hop.status >= 300 && hop.status < 400 ? 'status-redirect' : 'status-error';
+        
+        const importantHeaders = ['location', 'content-type', 'server', 'cache-control'];
+        const headersHtml = importantHeaders
+          .filter(h => hop.headers[h])
+          .map(h => `<span class="header-tag">${h}: ${escapeHtml(String(hop.headers[h]).substring(0, 40))}${String(hop.headers[h]).length > 40 ? '...' : ''}</span>`)
+          .join('');
+
+        const hopHtml = `
+          <div class="hop-card">
+            <div class="hop-header">
+              <div class="hop-step">
+                <span class="step-number">${hop.step}</span>
+                <span>${hop.statusText}</span>
+              </div>
+              <div class="hop-status">
+                <span class="status-code ${statusClass}">${hop.status}</span>
+                <span class="timing">${hop.timing}ms</span>
+              </div>
+            </div>
+            <div class="hop-url">${escapeHtml(hop.url)}</div>
+            ${headersHtml ? `
+            <div class="hop-headers">
+              <div class="hop-headers-title">Headers relevantes</div>
+              <div class="hop-headers-list">${headersHtml}</div>
+            </div>
+            ` : ''}
+          </div>
+          ${isRedirect && index < data.hops.length - 1 ? `
+          <div class="redirect-arrow">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v14M19 12l-7 7-7-7"/>
+            </svg>
+          </div>
+          ` : ''}
+        `;
+
+        hopsContainer.innerHTML += hopHtml;
+      });
+
+      container.style.display = 'block';
+    } catch {
+      loading.classList.remove('active');
+      error.textContent = 'Error de conexión. Intentá de nuevo.';
+      error.classList.add('active');
+    }
+  }
+
+  function escapeHtml(str: string): string {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  btn.addEventListener('click', trace);
+  urlInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') trace();
+  });
+</script>
