@@ -42,7 +42,10 @@ import ToolLayout from '../components/ToolLayout.astro';
 
   <div slot="results">
     <div class="results-card card" id="results-card" style="display:none;">
-      <div class="results-meta" id="results-meta"></div>
+      <div class="results-meta" id="results-meta">
+        <span id="results-count"></span>
+        <button class="copy-btn" id="copy-all-btn">Copiar todo</button>
+      </div>
       <table class="results-table">
         <thead>
           <tr>
@@ -74,14 +77,31 @@ import ToolLayout from '../components/ToolLayout.astro';
   }
 
   .results-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     padding: 0.75rem 1rem;
     font-size: 0.82rem;
     color: var(--gris-medio);
     border-bottom: 1px solid var(--borde);
   }
 
+  .results-meta .copy-btn {
+    margin-left: auto;
+  }
+
   .results-card {
     overflow: hidden;
+  }
+
+  .value-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .value-cell code {
+    flex: 1;
   }
 
   @media (max-width: 600px) {
@@ -108,8 +128,28 @@ import ToolLayout from '../components/ToolLayout.astro';
   const loading = document.getElementById('loading')!;
   const error = document.getElementById('error')!;
   const card = document.getElementById('results-card')!;
-  const meta = document.getElementById('results-meta')!;
+  const metaCount = document.getElementById('results-count')!;
+  const copyAllBtn = document.getElementById('copy-all-btn')!;
   const tbody = document.getElementById('results-body')!;
+
+  let currentRecords: any[] = [];
+
+  async function copyToClipboard(text: string, btn?: HTMLButtonElement) {
+    try {
+      await navigator.clipboard.writeText(text);
+      if (btn) {
+        const originalText = btn.textContent;
+        btn.textContent = 'Copiado!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.classList.remove('copied');
+        }, 1500);
+      }
+    } catch {
+      // Silently fail if clipboard not available
+    }
+  }
 
   async function lookup() {
     const domain = domainInput.value.trim();
@@ -144,15 +184,29 @@ import ToolLayout from '../components/ToolLayout.astro';
         return;
       }
 
-      meta.textContent = `${data.records.length} registro(s) encontrado(s) — ${data.queryTime}ms`;
-      tbody.innerHTML = data.records.map((r: any) => `
+      currentRecords = data.records;
+      metaCount.textContent = `${data.records.length} registro(s) encontrado(s) — ${data.queryTime}ms`;
+      
+      tbody.innerHTML = data.records.map((r: any, index: number) => `
         <tr>
           <td><code>${esc(r.name)}</code></td>
           <td>${esc(r.type)}</td>
           <td>${r.TTL}s</td>
-          <td><code>${esc(r.data)}</code></td>
+          <td class="value-cell">
+            <code>${esc(r.data)}</code>
+            <button class="copy-btn" data-index="${index}">Copiar</button>
+          </td>
         </tr>
       `).join('');
+
+      // Add click handlers to individual copy buttons
+      tbody.querySelectorAll('.copy-btn').forEach((copyBtn) => {
+        copyBtn.addEventListener('click', () => {
+          const index = parseInt(copyBtn.getAttribute('data-index') || '0');
+          const record = currentRecords[index];
+          copyToClipboard(record.data, copyBtn as HTMLButtonElement);
+        });
+      });
 
       card.style.display = 'block';
     } catch {
@@ -161,6 +215,16 @@ import ToolLayout from '../components/ToolLayout.astro';
       error.classList.add('active');
     }
   }
+
+  // Copy all button handler
+  copyAllBtn.addEventListener('click', () => {
+    if (currentRecords.length === 0) return;
+    const domain = domainInput.value.trim();
+    const type = typeSelect.value;
+    const text = currentRecords.map(r => `${r.name} ${r.TTL} IN ${r.type} ${r.data}`).join('\n');
+    const header = `; Registros DNS ${type} para ${domain}\n; ${currentRecords.length} registro(s)\n\n`;
+    copyToClipboard(header + text, copyAllBtn);
+  });
 
   function esc(s: string): string {
     const d = document.createElement('div');

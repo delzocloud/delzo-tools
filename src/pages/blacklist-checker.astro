@@ -4,22 +4,23 @@ import ToolLayout from '../components/ToolLayout.astro';
 
 <ToolLayout
   title="Blacklist Checker"
-  description="Verificá si una IP o dominio está en listas negras (DNSBL). Consultá 12 blacklists en paralelo."
+  description="Verificá si IPs o dominios están en listas negras (DNSBL). Consultá múltiples IPs y 12 blacklists en paralelo."
   heading="Blacklist Checker"
-  subheading="Verificá si una IP o dominio está listado en las principales DNSBLs."
+  subheading="Verificá si IPs o dominios están listados en las principales DNSBLs."
 >
   <div slot="form">
     <div class="form-row">
       <div class="input-group">
-        <label for="target-input">IP o Dominio</label>
-        <input
-          type="text"
+        <label for="target-input">IPs o Dominios (uno por línea)</label>
+        <textarea
           id="target-input"
-          placeholder="192.168.1.1 o ejemplo.com"
-          autocomplete="off"
+          placeholder="192.168.1.1&#10;ejemplo.com&#10;8.8.8.8"
+          rows="4"
           spellcheck="false"
-        />
+        ></textarea>
       </div>
+    </div>
+    <div class="form-actions">
       <button class="btn" id="check-btn">Verificar</button>
     </div>
     <div class="loading" id="loading"><div class="spinner"></div> Consultando blacklists...</div>
@@ -27,31 +28,48 @@ import ToolLayout from '../components/ToolLayout.astro';
   </div>
 
   <div slot="results">
-    <div class="results-card card" id="results-card" style="display:none;">
-      <div class="results-summary" id="results-summary"></div>
-      <table class="results-table">
-        <thead>
-          <tr>
-            <th>Lista</th>
-            <th>Estado</th>
-            <th>Respuesta</th>
-          </tr>
-        </thead>
-        <tbody id="results-body"></tbody>
-      </table>
-    </div>
+    <div id="results-container"></div>
   </div>
 </ToolLayout>
 
 <style>
   .form-row {
-    display: flex;
-    gap: 0.75rem;
-    align-items: flex-end;
+    margin-bottom: 0.75rem;
+  }
+
+  .form-row textarea {
+    width: 100%;
+    min-height: 100px;
+    resize: vertical;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+  }
+
+  .form-actions {
+    margin-bottom: 0.75rem;
   }
 
   .input-group {
     flex: 1;
+  }
+
+  .input-group label {
+    margin-bottom: 0.5rem;
+  }
+
+  .results-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .results-card {
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+
+  .results-card:last-child {
+    margin-bottom: 0;
   }
 
   .results-summary {
@@ -61,8 +79,14 @@ import ToolLayout from '../components/ToolLayout.astro';
     border-bottom: 1px solid var(--borde);
   }
 
-  .results-card {
-    overflow: hidden;
+  .results-summary.listed {
+    background: rgba(239, 68, 68, 0.05);
+    color: #dc2626;
+  }
+
+  .results-summary.clean {
+    background: rgba(16, 185, 129, 0.05);
+    color: #059669;
   }
 
   .badge-pass {
@@ -85,13 +109,22 @@ import ToolLayout from '../components/ToolLayout.astro';
     color: #dc2626;
   }
 
-  @media (max-width: 600px) {
-    .form-row {
-      flex-direction: column;
-      align-items: stretch;
-    }
+  .multi-results {
+    margin-top: 1rem;
+  }
 
-    .form-row .btn {
+  .multi-results h3 {
+    font-size: 1rem;
+    margin: 1rem 0 0.5rem 0;
+    color: var(--gris-medio);
+  }
+
+  .multi-results h3:first-child {
+    margin-top: 0;
+  }
+
+  @media (max-width: 600px) {
+    .form-actions .btn {
       width: 100%;
       justify-content: center;
     }
@@ -99,30 +132,31 @@ import ToolLayout from '../components/ToolLayout.astro';
 </style>
 
 <script>
-  const targetInput = document.getElementById('target-input') as HTMLInputElement;
+  const targetInput = document.getElementById('target-input') as HTMLTextAreaElement;
   const btn = document.getElementById('check-btn')!;
   const loading = document.getElementById('loading')!;
   const error = document.getElementById('error')!;
-  const card = document.getElementById('results-card')!;
-  const summary = document.getElementById('results-summary')!;
-  const tbody = document.getElementById('results-body')!;
+  const resultsContainer = document.getElementById('results-container')!;
 
   async function check() {
-    const target = targetInput.value.trim();
+    const targets = targetInput.value
+      .split('\n')
+      .map(t => t.trim())
+      .filter(t => t.length > 0);
 
     error.classList.remove('active');
-    card.style.display = 'none';
+    resultsContainer.innerHTML = '';
     loading.classList.add('active');
 
-    if (!target) {
+    if (targets.length === 0) {
       loading.classList.remove('active');
-      error.textContent = 'Ingresá una IP o dominio.';
+      error.textContent = 'Ingresá al menos una IP o dominio.';
       error.classList.add('active');
       return;
     }
 
     try {
-      const res = await fetch(`/api/blacklist-checker?target=${encodeURIComponent(target)}`);
+      const res = await fetch(`/api/blacklist-checker?targets=${encodeURIComponent(targets.join(','))}`);
       const data = await res.json();
 
       loading.classList.remove('active');
@@ -133,27 +167,71 @@ import ToolLayout from '../components/ToolLayout.astro';
         return;
       }
 
-      const ipInfo = data.domain ? `${data.domain} (${data.ip})` : data.ip;
-      if (data.listed > 0) {
-        summary.innerHTML = `<span style="color:#dc2626">${ipInfo} — Listado en ${data.listed}/${data.total} blacklists</span>`;
+      // Handle single or multiple results
+      const results = Array.isArray(data) ? data : [data];
+
+      if (results.length === 1) {
+        // Single result - show in one card
+        resultsContainer.appendChild(createResultCard(results[0]));
       } else {
-        summary.innerHTML = `<span style="color:#059669">${ipInfo} — Limpio en ${data.total}/${data.total} blacklists</span>`;
+        // Multiple results - show summary + individual cards
+        const totalListed = results.filter((r: any) => r.listed > 0).length;
+        const totalClean = results.length - totalListed;
+
+        const summaryCard = document.createElement('div');
+        summaryCard.className = 'results-card card';
+        summaryCard.innerHTML = `
+          <div class="results-summary ${totalListed > 0 ? 'listed' : 'clean'}">
+            ${results.length} IPs verificadas — ${totalListed} listadas, ${totalClean} limpias
+          </div>
+        `;
+        resultsContainer.appendChild(summaryCard);
+
+        // Add individual results
+        results.forEach((result: any) => {
+          resultsContainer.appendChild(createResultCard(result));
+        });
       }
-
-      tbody.innerHTML = data.results.map((r: any) => `
-        <tr>
-          <td><code>${esc(r.list)}</code></td>
-          <td>${r.listed ? '<span class="badge-fail">Listado</span>' : '<span class="badge-pass">Limpio</span>'}</td>
-          <td>${r.response ? '<code>' + esc(r.response) + '</code>' : '—'}</td>
-        </tr>
-      `).join('');
-
-      card.style.display = 'block';
     } catch {
       loading.classList.remove('active');
       error.textContent = 'Error de conexión. Intentá de nuevo.';
       error.classList.add('active');
     }
+  }
+
+  function createResultCard(data: any): HTMLElement {
+    const card = document.createElement('div');
+    card.className = 'results-card card';
+
+    const ipInfo = data.domain ? `${data.domain} (${data.ip})` : data.ip;
+    const summaryClass = data.listed > 0 ? 'listed' : 'clean';
+    const summaryText = data.listed > 0 
+      ? `${ipInfo} — Listado en ${data.listed}/${data.total} blacklists`
+      : `${ipInfo} — Limpio en ${data.total}/${data.total} blacklists`;
+
+    card.innerHTML = `
+      <div class="results-summary ${summaryClass}">${summaryText}</div>
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th>Lista</th>
+            <th>Estado</th>
+            <th>Respuesta</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.results.map((r: any) => `
+            <tr>
+              <td><code>${esc(r.list)}</code></td>
+              <td>${r.listed ? '<span class="badge-fail">Listado</span>' : '<span class="badge-pass">Limpio</span>'}</td>
+              <td>${r.response ? '<code>' + esc(r.response) + '</code>' : '—'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    return card;
   }
 
   function esc(s: string): string {
@@ -164,6 +242,6 @@ import ToolLayout from '../components/ToolLayout.astro';
 
   btn.addEventListener('click', check);
   targetInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') check();
+    if (e.key === 'Enter' && e.metaKey) check();
   });
 </script>

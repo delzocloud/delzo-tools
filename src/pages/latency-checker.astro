@@ -171,6 +171,28 @@ import ToolLayout from '../components/ToolLayout.astro';
     gap: 0;
   }
 
+  .region-group {
+    border-bottom: 2px solid var(--borde);
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .region-group:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .region-header {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--gris-medio);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.5rem 0 0.25rem 0;
+    margin-bottom: 0.25rem;
+  }
+
   .latency-row {
     display: flex;
     align-items: center;
@@ -319,6 +341,15 @@ import ToolLayout from '../components/ToolLayout.astro';
   const error = document.getElementById('error')!;
   const container = document.getElementById('results-container')!;
 
+  // Group regions by continent
+  const REGION_GROUPS: Record<string, string[]> = {
+    'Tu ubicación': ['CUR'],
+    'Sudamérica': ['EZE', 'SCL', 'GRU'],
+    'Norteamérica': ['MIA', 'LAX'],
+    'Europa': ['LHR', 'FRA'],
+    'Asia-Pacífico': ['SIN', 'NRT', 'SYD'],
+  };
+
   async function check() {
     const url = urlInput.value.trim();
 
@@ -354,30 +385,63 @@ import ToolLayout from '../components/ToolLayout.astro';
       document.getElementById('slowest-value')!.textContent = `${data.slowest.latency}ms`;
       document.getElementById('slowest-location')!.textContent = data.slowest.region;
 
-      // Chart
+      // Chart - grouped by region
       const chartBody = document.getElementById('chart-body')!;
       chartBody.innerHTML = '';
 
       const maxLatency = Math.max(...data.results.map((r: any) => r.latency));
 
+      // Group results by continent
+      const groupedResults: Record<string, any[]> = {};
       for (const result of data.results) {
-        const percentage = (result.latency / maxLatency) * 100;
-        const speedClass = result.latency < 100 ? 'fast' : result.latency < 500 ? 'medium' : 'slow';
-        const isCurrent = result.code === 'CUR';
+        let groupName = 'Otros';
+        for (const [continent, codes] of Object.entries(REGION_GROUPS)) {
+          if (codes.includes(result.code)) {
+            groupName = continent;
+            break;
+          }
+        }
+        if (!groupedResults[groupName]) {
+          groupedResults[groupName] = [];
+        }
+        groupedResults[groupName].push(result);
+      }
 
-        chartBody.innerHTML += `
-          <div class="latency-row">
-            <div class="region-info">
-              <div class="region-name">${escapeHtml(result.region)} ${isCurrent ? '(Vos)' : ''}</div>
-              <div class="region-code">${result.code}</div>
-            </div>
-            <div class="bar-container">
-              <div class="bar-fill ${speedClass}" style="width: ${percentage}%">
-                <span class="bar-value">${result.latency}ms</span>
+      // Render groups in order
+      const groupOrder = ['Tu ubicación', 'Sudamérica', 'Norteamérica', 'Europa', 'Asia-Pacífico', 'Otros'];
+      
+      for (const groupName of groupOrder) {
+        const groupResults = groupedResults[groupName];
+        if (!groupResults || groupResults.length === 0) continue;
+
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'region-group';
+        
+        // Add region header
+        groupDiv.innerHTML += `<div class="region-header">${groupName}</div>`;
+
+        // Add latency rows for this group
+        for (const result of groupResults) {
+          const percentage = (result.latency / maxLatency) * 100;
+          const speedClass = result.latency < 100 ? 'fast' : result.latency < 500 ? 'medium' : 'slow';
+          const isCurrent = result.code === 'CUR';
+
+          groupDiv.innerHTML += `
+            <div class="latency-row">
+              <div class="region-info">
+                <div class="region-name">${escapeHtml(result.region)} ${isCurrent ? '(Vos)' : ''}</div>
+                <div class="region-code">${result.code}</div>
+              </div>
+              <div class="bar-container">
+                <div class="bar-fill ${speedClass}" style="width: ${percentage}%">
+                  <span class="bar-value">${result.latency}ms</span>
+                </div>
               </div>
             </div>
-          </div>
-        `;
+          `;
+        }
+
+        chartBody.appendChild(groupDiv);
       }
 
       // Insights

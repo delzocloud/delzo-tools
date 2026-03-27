@@ -51,7 +51,10 @@ import ToolLayout from '../components/ToolLayout.astro';
         </div>
         <p class="auth-details" id="spf-details"></p>
         <div class="auth-record" id="spf-record-wrap" style="display:none;">
-          <label>Registro</label>
+          <div class="record-header">
+            <label>Registro</label>
+            <button class="copy-btn" id="copy-spf">Copiar</button>
+          </div>
           <code id="spf-record"></code>
         </div>
         <div class="auth-rec">
@@ -68,7 +71,10 @@ import ToolLayout from '../components/ToolLayout.astro';
         </div>
         <p class="auth-details" id="dmarc-details"></p>
         <div class="auth-record" id="dmarc-record-wrap" style="display:none;">
-          <label>Registro</label>
+          <div class="record-header">
+            <label>Registro</label>
+            <button class="copy-btn" id="copy-dmarc">Copiar</button>
+          </div>
           <code id="dmarc-record"></code>
         </div>
         <div class="auth-rec">
@@ -85,7 +91,10 @@ import ToolLayout from '../components/ToolLayout.astro';
         </div>
         <p class="auth-details" id="dkim-details"></p>
         <div class="auth-record" id="dkim-record-wrap" style="display:none;">
-          <label>Registro</label>
+          <div class="record-header">
+            <label>Registro</label>
+            <button class="copy-btn" id="copy-dkim">Copiar</button>
+          </div>
           <code id="dkim-record"></code>
         </div>
         <div class="auth-rec">
@@ -143,6 +152,17 @@ import ToolLayout from '../components/ToolLayout.astro';
     margin-bottom: 0.75rem;
   }
 
+  .record-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.3rem;
+  }
+
+  .record-header label {
+    margin-bottom: 0;
+  }
+
   .auth-record label {
     font-size: 0.78rem;
     text-transform: uppercase;
@@ -196,6 +216,23 @@ import ToolLayout from '../components/ToolLayout.astro';
   const error = document.getElementById('error')!;
   const container = document.getElementById('results-container')!;
 
+  let currentData: any = {};
+
+  async function copyToClipboard(text: string, btn: HTMLButtonElement) {
+    try {
+      await navigator.clipboard.writeText(text);
+      const originalText = btn.textContent;
+      btn.textContent = 'Copiado!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.classList.remove('copied');
+      }, 1500);
+    } catch {
+      // Silently fail if clipboard not available
+    }
+  }
+
   function setBadge(id: string, status: string) {
     const badge = document.getElementById(id)!;
     const labels: Record<string, string> = { pass: '✓ Pass', warning: '⚠ Warning', fail: '✗ Fail' };
@@ -246,6 +283,8 @@ import ToolLayout from '../components/ToolLayout.astro';
         return;
       }
 
+      currentData = data;
+
       // Score banner
       renderScore(data);
 
@@ -292,6 +331,25 @@ import ToolLayout from '../components/ToolLayout.astro';
       error.classList.add('active');
     }
   }
+
+  // Copy button handlers
+  document.getElementById('copy-spf')!.addEventListener('click', () => {
+    if (currentData.spf?.record) {
+      copyToClipboard(currentData.spf.record, document.getElementById('copy-spf') as HTMLButtonElement);
+    }
+  });
+
+  document.getElementById('copy-dmarc')!.addEventListener('click', () => {
+    if (currentData.dmarc?.record) {
+      copyToClipboard(currentData.dmarc.record, document.getElementById('copy-dmarc') as HTMLButtonElement);
+    }
+  });
+
+  document.getElementById('copy-dkim')!.addEventListener('click', () => {
+    if (currentData.dkim?.record) {
+      copyToClipboard(currentData.dkim.record, document.getElementById('copy-dkim') as HTMLButtonElement);
+    }
+  });
 
   btn.addEventListener('click', analyze);
   domainInput.addEventListener('keydown', (e) => {
