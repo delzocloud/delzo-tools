@@ -1,0 +1,258 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Sidebar from '../components/Sidebar.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<BaseLayout
+  title="Política de Privacidad"
+  description="Política de privacidad de tools.delzo.cloud — cómo recopilamos, usamos y protegemos tu información."
+>
+  <div class="app-layout">
+    <Sidebar />
+    <div class="app-content">
+      <main id="main-content">
+        <div class="container legal-container">
+          <header class="legal-header">
+            <p class="legal-breadcrumb"><a href="/">← Volver al inicio</a></p>
+            <h1>Política de Privacidad</h1>
+            <p class="legal-updated">Última actualización: abril de 2026</p>
+          </header>
+
+          <div class="legal-body">
+
+            <section>
+              <h2>1. Quiénes somos</h2>
+              <p>
+                Este sitio (<strong>tools.delzo.cloud</strong>) es operado por <strong>Delzo.cloud</strong>,
+                una empresa de servicios de infraestructura cloud y DevOps con base en Tucumán, Argentina.
+                Para cualquier consulta sobre privacidad, podés contactarnos en
+                <a href="mailto:hola@delzo.cloud">hola@delzo.cloud</a>.
+              </p>
+            </section>
+
+            <section>
+              <h2>2. Qué información recopilamos</h2>
+              <p>
+                Este sitio ofrece herramientas de networking gratuitas. No recopilamos ni almacenamos
+                información personal identificable de manera persistente.
+              </p>
+              <h3>Datos procesados temporalmente</h3>
+              <ul>
+                <li>
+                  <strong>Direcciones IP:</strong> Las herramientas pueden procesar IPs que vos ingresás
+                  voluntariamente (por ejemplo, en IP Geolocation o Blacklist Checker) para devolverte
+                  los resultados. Estos datos no se almacenan en nuestros servidores más allá del tiempo
+                  necesario para responder la consulta.
+                </li>
+                <li>
+                  <strong>Dominios y URLs:</strong> Los dominios y URLs que ingresás en nuestras herramientas
+                  son enviados a APIs de terceros para obtener los resultados (por ejemplo, resolvers DNS públicos,
+                  registros de Certificate Transparency). No los guardamos.
+                </li>
+                <li>
+                  <strong>IP de tu conexión:</strong> Nuestros servidores (Cloudflare Workers) procesan
+                  tu dirección IP de forma estándar para responder las solicitudes HTTP. Cloudflare puede
+                  registrarla según sus propias políticas de privacidad.
+                </li>
+              </ul>
+            </section>
+
+            <section>
+              <h2>3. Cookies y almacenamiento local</h2>
+              <p>
+                Este sitio usa <strong>localStorage</strong> (almacenamiento local del navegador) para recordar
+                tu preferencia de consentimiento de cookies. No usamos cookies de seguimiento ni de publicidad.
+              </p>
+              <h3>Cookies de terceros</h3>
+              <ul>
+                <li>
+                  <strong>Google Fonts:</strong> Cargamos tipografías desde Google Fonts. Google puede
+                  registrar la solicitud según su
+                  <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">política de privacidad</a>.
+                </li>
+              </ul>
+            </section>
+
+            <section>
+              <h2>4. Servicios de terceros</h2>
+              <p>
+                Para funcionar, nuestras herramientas consultan servicios externos:
+              </p>
+              <ul>
+                <li><strong>Cloudflare DNS over HTTPS</strong> — resolución de registros DNS</li>
+                <li><strong>crt.sh</strong> — Certificate Transparency logs</li>
+                <li><strong>Resolvers DNS públicos</strong> (Google 8.8.8.8, Cloudflare 1.1.1.1, etc.) — propagación DNS</li>
+                <li><strong>APIs de geolocalización IP</strong> — herramienta de geolocalización</li>
+                <li><strong>DNSBLs públicas</strong> — verificación de listas negras</li>
+              </ul>
+              <p>
+                Al usar nuestras herramientas, los dominios e IPs que ingresás son enviados a estos servicios.
+                Cada uno tiene sus propias políticas de privacidad.
+              </p>
+            </section>
+
+            <section>
+              <h2>5. Con quién compartimos tu información</h2>
+              <p>
+                No vendemos ni compartimos información personal con terceros con fines comerciales.
+                Los únicos datos que salen de nuestra plataforma son los necesarios para que cada
+                herramienta funcione (dominios, IPs, URLs), enviados a los servicios técnicos mencionados arriba.
+              </p>
+            </section>
+
+            <section>
+              <h2>6. Seguridad</h2>
+              <p>
+                El sitio utiliza HTTPS en todo momento. La infraestructura corre sobre Cloudflare Workers,
+                que incluye protecciones estándar de red (DDoS, firewall, etc.).
+              </p>
+            </section>
+
+            <section>
+              <h2>7. Tus derechos</h2>
+              <p>
+                Dado que no recopilamos datos personales identificables de forma persistente, no hay
+                perfiles de usuario que modificar o eliminar. Si tenés alguna duda o preocupación sobre
+                privacidad, escribinos a <a href="mailto:hola@delzo.cloud">hola@delzo.cloud</a>.
+              </p>
+            </section>
+
+            <section>
+              <h2>8. Cambios a esta política</h2>
+              <p>
+                Podemos actualizar esta política en cualquier momento. La fecha de "última actualización"
+                al inicio de la página refleja la versión vigente. Te recomendamos revisarla periódicamente.
+              </p>
+            </section>
+
+            <section>
+              <h2>9. Contacto</h2>
+              <p>
+                Para consultas sobre privacidad o protección de datos:<br />
+                <strong>Delzo.cloud</strong><br />
+                Tucumán, Argentina<br />
+                <a href="mailto:hola@delzo.cloud">hola@delzo.cloud</a>
+              </p>
+            </section>
+
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .legal-container {
+    max-width: 720px;
+    padding-top: 3rem;
+    padding-bottom: 4rem;
+  }
+
+  .legal-header {
+    margin-bottom: 2.5rem;
+  }
+
+  .legal-breadcrumb {
+    margin-bottom: 1rem;
+  }
+
+  .legal-breadcrumb a {
+    font-size: 0.85rem;
+    color: var(--gris-medio);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .legal-breadcrumb a:hover {
+    color: var(--verde-dark);
+  }
+
+  .legal-header h1 {
+    font-size: 2rem;
+    letter-spacing: -0.04em;
+    color: var(--gris-oscuro);
+    margin-bottom: 0.35rem;
+  }
+
+  .legal-updated {
+    font-size: 0.83rem;
+    color: var(--gris-claro);
+  }
+
+  .legal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .legal-body section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .legal-body h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--gris-oscuro);
+    letter-spacing: -0.02em;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--borde);
+  }
+
+  .legal-body h3 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--gris-oscuro);
+    margin-top: 0.25rem;
+  }
+
+  .legal-body p {
+    font-size: 0.92rem;
+    color: var(--gris-medio);
+    line-height: 1.7;
+  }
+
+  .legal-body a {
+    color: var(--verde-dark);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .legal-body a:hover {
+    text-decoration: underline;
+  }
+
+  .legal-body ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .legal-body ul li {
+    font-size: 0.92rem;
+    color: var(--gris-medio);
+    line-height: 1.65;
+    padding-left: 1.25rem;
+    position: relative;
+  }
+
+  .legal-body ul li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--turquesa);
+    font-weight: 600;
+  }
+
+  @media (max-width: 600px) {
+    .legal-header h1 {
+      font-size: 1.65rem;
+    }
+  }
+</style>

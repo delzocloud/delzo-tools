@@ -1,0 +1,256 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Sidebar from '../components/Sidebar.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<BaseLayout
+  title="Términos y Condiciones"
+  description="Términos y condiciones de uso de tools.delzo.cloud — herramientas gratuitas de networking."
+>
+  <div class="app-layout">
+    <Sidebar />
+    <div class="app-content">
+      <main id="main-content">
+        <div class="container legal-container">
+          <header class="legal-header">
+            <p class="legal-breadcrumb"><a href="/">← Volver al inicio</a></p>
+            <h1>Términos y Condiciones</h1>
+            <p class="legal-updated">Última actualización: abril de 2026</p>
+          </header>
+
+          <div class="legal-body">
+
+            <section>
+              <h2>1. Aceptación de los términos</h2>
+              <p>
+                Al acceder y usar <strong>tools.delzo.cloud</strong>, aceptás estos Términos y Condiciones
+                en su totalidad. Si no estás de acuerdo con alguna parte, no uses el sitio.
+              </p>
+            </section>
+
+            <section>
+              <h2>2. Descripción del servicio</h2>
+              <p>
+                tools.delzo.cloud ofrece herramientas gratuitas de networking para profesionales IT:
+                DNS Lookup, Email Security Grader, CIDR Calculator, IP Geolocation, Security Headers,
+                Subdomain Finder, Cert Monitor, Blacklist Checker, y otras.
+              </p>
+              <p>
+                Estas herramientas son provistas <strong>sin costo</strong> por Delzo.cloud como servicio
+                a la comunidad IT de Latinoamérica. No requieren registro ni creación de cuenta.
+              </p>
+            </section>
+
+            <section>
+              <h2>3. Uso permitido</h2>
+              <p>
+                Las herramientas están pensadas para uso legítimo por parte de profesionales IT,
+                administradores de sistemas, desarrolladores y cualquier persona con interés técnico.
+                Podés usarlas para:
+              </p>
+              <ul>
+                <li>Verificar la configuración de tus propios dominios e infraestructura</li>
+                <li>Diagnosticar problemas de DNS, email y seguridad</li>
+                <li>Analizar dominios de clientes con autorización explícita de los mismos</li>
+                <li>Aprendizaje y capacitación en redes y seguridad</li>
+              </ul>
+            </section>
+
+            <section>
+              <h2>4. Uso prohibido</h2>
+              <p>
+                Queda prohibido usar este sitio para:
+              </p>
+              <ul>
+                <li>Reconocimiento o escaneo de infraestructura ajena sin autorización</li>
+                <li>Actividades ilegales o que violen la privacidad de terceros</li>
+                <li>Ataques automatizados, scraping masivo o sobrecarga de los servicios</li>
+                <li>Cualquier actividad que viole las leyes aplicables en Argentina o en el país del usuario</li>
+              </ul>
+            </section>
+
+            <section>
+              <h2>5. Limitación de responsabilidad</h2>
+              <p>
+                Las herramientas son provistas <strong>"tal como están"</strong> (as-is), sin garantías
+                de ningún tipo, ni explícitas ni implícitas. Los resultados son informativos y pueden
+                no reflejar el estado actual de los sistemas consultados.
+              </p>
+              <p>
+                Delzo.cloud no se responsabiliza por:
+              </p>
+              <ul>
+                <li>Inexactitudes o desactualizaciones en los resultados</li>
+                <li>Decisiones tomadas en base a la información obtenida</li>
+                <li>Interrupciones del servicio o indisponibilidad temporal</li>
+                <li>Daños directos, indirectos o consecuentes derivados del uso del sitio</li>
+              </ul>
+            </section>
+
+            <section>
+              <h2>6. Disponibilidad del servicio</h2>
+              <p>
+                Nos esforzamos por mantener el sitio disponible, pero no garantizamos uptime del 100%.
+                El servicio puede ser modificado, suspendido o discontinuado en cualquier momento sin
+                previo aviso.
+              </p>
+            </section>
+
+            <section>
+              <h2>7. Propiedad intelectual</h2>
+              <p>
+                El código, diseño, textos y marca de tools.delzo.cloud son propiedad de Delzo.cloud.
+                Queda prohibida la reproducción total o parcial del sitio sin autorización escrita.
+              </p>
+            </section>
+
+            <section>
+              <h2>8. Servicios de terceros</h2>
+              <p>
+                Algunas herramientas dependen de APIs y servicios de terceros (Cloudflare, Google,
+                crt.sh, etc.). Delzo.cloud no controla esos servicios y no se responsabiliza por
+                su disponibilidad o exactitud.
+              </p>
+            </section>
+
+            <section>
+              <h2>9. Modificaciones</h2>
+              <p>
+                Podemos modificar estos Términos en cualquier momento. Los cambios entran en vigencia
+                al publicarse en esta página. El uso continuo del sitio implica la aceptación de
+                los términos vigentes.
+              </p>
+            </section>
+
+            <section>
+              <h2>10. Ley aplicable</h2>
+              <p>
+                Estos Términos se rigen por las leyes de la República Argentina. Cualquier disputa
+                será resuelta ante los tribunales competentes de Tucumán, Argentina.
+              </p>
+            </section>
+
+            <section>
+              <h2>11. Contacto</h2>
+              <p>
+                Para consultas sobre estos términos:<br />
+                <strong>Delzo.cloud</strong><br />
+                Tucumán, Argentina<br />
+                <a href="mailto:hola@delzo.cloud">hola@delzo.cloud</a>
+              </p>
+            </section>
+
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .legal-container {
+    max-width: 720px;
+    padding-top: 3rem;
+    padding-bottom: 4rem;
+  }
+
+  .legal-header {
+    margin-bottom: 2.5rem;
+  }
+
+  .legal-breadcrumb {
+    margin-bottom: 1rem;
+  }
+
+  .legal-breadcrumb a {
+    font-size: 0.85rem;
+    color: var(--gris-medio);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .legal-breadcrumb a:hover {
+    color: var(--verde-dark);
+  }
+
+  .legal-header h1 {
+    font-size: 2rem;
+    letter-spacing: -0.04em;
+    color: var(--gris-oscuro);
+    margin-bottom: 0.35rem;
+  }
+
+  .legal-updated {
+    font-size: 0.83rem;
+    color: var(--gris-claro);
+  }
+
+  .legal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .legal-body section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .legal-body h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--gris-oscuro);
+    letter-spacing: -0.02em;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--borde);
+  }
+
+  .legal-body p {
+    font-size: 0.92rem;
+    color: var(--gris-medio);
+    line-height: 1.7;
+  }
+
+  .legal-body a {
+    color: var(--verde-dark);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .legal-body a:hover {
+    text-decoration: underline;
+  }
+
+  .legal-body ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .legal-body ul li {
+    font-size: 0.92rem;
+    color: var(--gris-medio);
+    line-height: 1.65;
+    padding-left: 1.25rem;
+    position: relative;
+  }
+
+  .legal-body ul li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--turquesa);
+    font-weight: 600;
+  }
+
+  @media (max-width: 600px) {
+    .legal-header h1 {
+      font-size: 1.65rem;
+    }
+  }
+</style>
