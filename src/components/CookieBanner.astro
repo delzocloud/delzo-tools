@@ -1,0 +1,155 @@
+---
+// CookieBanner.astro — shown until user accepts or rejects
+---
+
+<div class="cookie-banner" id="cookie-banner" role="dialog" aria-label="Consentimiento de cookies" aria-live="polite">
+  <div class="cookie-inner">
+    <div class="cookie-text">
+      <p>
+        Usamos cookies esenciales para el funcionamiento del sitio y Google Fonts para la tipografía.
+        No recopilamos datos de seguimiento ni compartimos información personal.
+        <a href="/privacidad" class="cookie-link">Política de privacidad</a>
+      </p>
+    </div>
+    <div class="cookie-actions">
+      <button class="cookie-btn cookie-btn-secondary" id="cookie-reject">Solo esenciales</button>
+      <button class="cookie-btn cookie-btn-primary" id="cookie-accept">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .cookie-banner {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 3rem);
+    max-width: 720px;
+    background: var(--blanco);
+    border: 1px solid var(--borde);
+    border-radius: 14px;
+    box-shadow: 0 8px 32px rgba(31, 41, 55, 0.12), 0 2px 8px rgba(16, 185, 129, 0.08);
+    z-index: 1000;
+    padding: 1rem 1.25rem;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .cookie-banner.hidden {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+    pointer-events: none;
+  }
+
+  .cookie-inner {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .cookie-text {
+    flex: 1;
+    min-width: 220px;
+  }
+
+  .cookie-text p {
+    font-size: 0.83rem;
+    color: var(--gris-medio);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .cookie-link {
+    color: var(--verde-dark);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .cookie-link:hover {
+    text-decoration: underline;
+  }
+
+  .cookie-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .cookie-btn {
+    padding: 0.45rem 1rem;
+    border-radius: 8px;
+    font-size: 0.83rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    font-family: var(--font-sans);
+    white-space: nowrap;
+  }
+
+  .cookie-btn-secondary {
+    background: transparent;
+    color: var(--gris-medio);
+    border-color: var(--borde);
+  }
+
+  .cookie-btn-secondary:hover {
+    background: var(--fondo-alt);
+    color: var(--gris-oscuro);
+  }
+
+  .cookie-btn-primary {
+    background: var(--verde);
+    color: var(--blanco);
+  }
+
+  .cookie-btn-primary:hover {
+    background: var(--verde-dark);
+  }
+
+  @media (max-width: 500px) {
+    .cookie-banner {
+      bottom: 0.75rem;
+      width: calc(100% - 1.5rem);
+    }
+
+    .cookie-inner {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .cookie-actions {
+      width: 100%;
+      justify-content: flex-end;
+    }
+  }
+</style>
+
+<script>
+  const STORAGE_KEY = 'delzo-cookie-consent';
+  const banner = document.getElementById('cookie-banner');
+
+  function hideBanner() {
+    banner?.classList.add('hidden');
+    setTimeout(() => {
+      banner?.remove();
+    }, 350);
+  }
+
+  // Hide immediately if already decided
+  const existing = localStorage.getItem(STORAGE_KEY);
+  if (existing) {
+    banner?.remove();
+  }
+
+  document.getElementById('cookie-accept')?.addEventListener('click', () => {
+    localStorage.setItem(STORAGE_KEY, 'accepted');
+    hideBanner();
+  });
+
+  document.getElementById('cookie-reject')?.addEventListener('click', () => {
+    localStorage.setItem(STORAGE_KEY, 'rejected');
+    hideBanner();
+  });
+</script>

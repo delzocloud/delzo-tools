@@ -7,6 +7,7 @@ interface Props {
 const { title, description } = Astro.props;
 
 import '../styles/global.css';
+import CookieBanner from '../components/CookieBanner.astro';
 ---
 
 <!DOCTYPE html>
@@ -33,5 +34,6 @@ import '../styles/global.css';
 <body>
   <a href="#main-content" class="skip-to-content">Saltar al contenido</a>
   <slot />
+  <CookieBanner />
 </body>
 </html>
