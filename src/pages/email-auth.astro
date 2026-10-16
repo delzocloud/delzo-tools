@@ -248,7 +248,7 @@ import LeadCta from '../components/LeadCta.astro';
 
   function setBadge(id: string, status: string) {
     const badge = document.getElementById(id)!;
-    const labels: Record<string, string> = { pass: '✓ Bien', warning: '⚠ Revisar', fail: '✗ Mal', error: '? No se pudo revisar' };
+    const labels: Record<string, string> = { pass: '✓ Bien', warning: '⚠ Revisar', fail: '✗ Mal', error: '? No se pudo revisar', unverified: '? No pudimos verificarla' };
     badge.textContent = labels[status] || status;
     badge.className = `badge badge-${status}`;
   }
@@ -267,7 +267,7 @@ import LeadCta from '../components/LeadCta.astro';
 
     document.getElementById('score-spf')!.textContent = `${score.spfScore}/30`;
     document.getElementById('score-dmarc')!.textContent = `${score.dmarcScore}/40`;
-    document.getElementById('score-dkim')!.textContent = `${score.dkimScore}/30`;
+    document.getElementById('score-dkim')!.textContent = score.dkimScore === null ? 'sin verificar (no cuenta)' : `${score.dkimScore}/30`;
   }
 
   async function analyze() {
@@ -328,7 +328,7 @@ import LeadCta from '../components/LeadCta.astro';
 
       // DKIM
       setBadge('dkim-badge', data.dkim.status);
-      document.getElementById('dkim-details')!.textContent = data.dkim.details;
+      document.getElementById('dkim-details')!.textContent = data.dkim.provider ? `${data.dkim.details} Proveedor: ${data.dkim.provider}.` : data.dkim.details;
       document.getElementById('dkim-recommendation')!.textContent = data.dkim.recommendation;
       const dkimWrap = document.getElementById('dkim-record-wrap')!;
       if (data.dkim.record) {

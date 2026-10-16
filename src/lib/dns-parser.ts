@@ -1,9 +1,10 @@
 import type { AuthStatus, SpfResult, DmarcResult, DkimResult, DkimKey, SpfQualifier } from './types';
 import { queryTxt } from './dns-client';
 import { organizationalDomain } from './psl';
+import { probeOrder, providerFromCname, providerFromSelector, MAX_PROBES } from './dkim-selectors';
 import { computeGrade, type GradeResult } from './grading';
 
-export type TxtResolver = (name: string) => Promise<{ nxdomain: boolean; records: string[] }>;
+export type TxtResolver = (name: string) => Promise<{ nxdomain: boolean; records: string[]; cnames?: string[] }>;
 
 const errMsg = (e: unknown) => (e instanceof Error && e.name === 'DnsError' ? e.message : 'No pudimos consultar el DNS en este momento.');
 
@@ -15,7 +16,10 @@ export interface EmailScore {
   total: number;
   spfScore: number;
   dmarcScore: number;
-  dkimScore: number;
+  /** null when DKIM could not be verified (not counted). */
+  dkimScore: number | null;
+  /** Max points actually evaluated (70 or 100). */
+  maxScore: number;
   grade: GradeResult;
 }
 
@@ -35,11 +39,13 @@ export function computeEmailScore(spf: SpfResult, dmarc: DmarcResult, dkim: Dkim
     if (dmarcScore > 0 && p !== 'none' && dmarc.pct < 100) dmarcScore -= 6;
   }
 
-  // DKIM: 30 pts, nothing without a valid (non revoked) key.
-  const dkimScore = dkim.keys.some((k) => !k.revoked) ? 30 : 0;
-
-  const total = spfScore + dmarcScore + dkimScore;
-  return { total, spfScore, dmarcScore, dkimScore, grade: computeGrade(total) };
+  // DKIM: 30 pts with an active key. If we could not verify it (unknown
+  // selector, DNS error), it is left out and the score is scaled to 100: no penalty.
+  const verified = dkim.status === 'pass';
+  const dkimScore = verified ? 30 : null;
+  const maxScore = verified ? 100 : 70;
+  const total = Math.round(((spfScore + dmarcScore + (dkimScore ?? 0)) * 100) / maxScore);
+  return { total, spfScore, dmarcScore, dkimScore, maxScore, grade: computeGrade(total) };
 }
 
 /* ------------------------------------------------------------------ */
@@ -312,12 +318,6 @@ export async function analyzeDmarc(domain: string, resolve: TxtResolver = queryT
 /* DKIM                                                               */
 /* ------------------------------------------------------------------ */
 
-export const DKIM_SELECTORS = [
-  'google', 'default', 'selector1', 'selector2', 'k1', 'k2', 'k3', 's1', 's2', 'dkim', 'mail', 'smtp',
-  'brevo1', 'brevo2', 'mandrill', 'mailjet', 'resend', 'amazonses', 'mxvault', 'zoho', 'zmail',
-  'protonmail', 'protonmail2', 'protonmail3', 'fm1', 'fm2', 'hs1', 'hs2', 'titan1', 'hostingermail1', 'cm', 'sig1',
-];
-
 export function parseDkim(record: string): { valid: boolean; revoked: boolean } {
   const tags = parseDmarcTags(record); // same tag=value; syntax
   const looksDkim = /^v\s*=\s*DKIM1/i.test(record) || 'p' in tags;
@@ -325,41 +325,83 @@ export function parseDkim(record: string): { valid: boolean; revoked: boolean } 
   return { valid: true, revoked: tags.p.replace(/\s+/g, '') === '' };
 }
 
-export async function analyzeDkim(domain: string, resolve: TxtResolver = queryTxt, extraSelector?: string): Promise<DkimResult> {
-  const selectors = [...new Set([...(extraSelector ? [extraSelector] : []), ...DKIM_SELECTORS])];
-  const results = await Promise.allSettled(
-    selectors.map(async (selector) => {
-      const { records } = await resolve(`${selector}._domainkey.${domain}`);
-      for (const r of records) {
-        const p = parseDkim(r);
-        if (p.valid) return { selector, record: r, revoked: p.revoked } as DkimKey;
-      }
-      return null;
-    }),
-  );
+export interface DkimOptions {
+  extraSelector?: string;
+  /** SPF record, used to probe the likely provider first. */
+  spfRecord?: string | null;
+  maxProbes?: number;
+}
 
-  const keys = results.flatMap((r) => (r.status === 'fulfilled' && r.value ? [r.value] : []));
-  const allFailed = results.every((r) => r.status === 'rejected');
-  const active = keys.filter((k) => !k.revoked);
-  const first = active[0] ?? keys[0];
+async function probe(domain: string, selector: string, resolve: TxtResolver): Promise<DkimKey | null> {
+  const r = await resolve(`${selector}._domainkey.${domain}`);
+  for (const rec of r.records) {
+    const p = parseDkim(rec);
+    if (p.valid) {
+      return { selector, record: rec, revoked: p.revoked, provider: providerFromCname(r.cnames) ?? providerFromSelector(selector) };
+    }
+  }
+  return null;
+}
+
+const UNVERIFIED_REC =
+  'Si mandás mails con Google, Microsoft, Brevo u otro servicio, activá DKIM desde su panel. Si ya está activo, ingresá tu selector en "Opciones avanzadas" para confirmarlo (lo ves en el encabezado DKIM-Signature, en s=).';
+
+export async function analyzeDkim(domain: string, resolve: TxtResolver = queryTxt, opts: DkimOptions | string = {}): Promise<DkimResult> {
+  const o: DkimOptions = typeof opts === 'string' ? { extraSelector: opts } : opts;
+  const checked: string[] = [];
+  const base = { keys: [] as DkimKey[], checkedSelectors: checked, provider: null as string | null, wildcard: false };
+
+  // 1) "google" first (Google Workspace default), plus the user's selector if any.
+  const first = [...new Set([o.extraSelector, 'google'].filter(Boolean) as string[])];
+  const wildcardLabel = `delzo-check-${Math.random().toString(36).slice(2, 10)}`;
+  const firstRes = await Promise.allSettled([...first, wildcardLabel].map((s) => probe(domain, s, resolve)));
+  checked.push(...first);
+
+  const wildcard = firstRes[firstRes.length - 1].status === 'fulfilled' && (firstRes[firstRes.length - 1] as PromiseFulfilledResult<DkimKey | null>).value !== null;
+  let keys = firstRes.slice(0, -1).flatMap((r) => (r.status === 'fulfilled' && r.value ? [r.value] : []));
+  let allFailed = firstRes.every((r) => r.status === 'rejected');
+
+  // 2) Then the provider list, only if nothing active was found yet.
+  if (!keys.some((k) => !k.revoked)) {
+    const rest = probeOrder(o.spfRecord, undefined).filter((s) => !first.includes(s)).slice(0, (o.maxProbes ?? MAX_PROBES) - first.length - 1);
+    const res = await Promise.allSettled(rest.map((s) => probe(domain, s, resolve)));
+    checked.push(...rest);
+    keys = keys.concat(res.flatMap((r) => (r.status === 'fulfilled' && r.value ? [r.value] : [])));
+    allFailed = allFailed && res.every((r) => r.status === 'rejected');
+  }
 
   if (allFailed) {
-    return { status: 'error', record: null, selector: '', keys, checkedSelectors: selectors, details: 'No pudimos revisar DKIM porque el DNS no respondió.', recommendation: 'Probá de nuevo en unos minutos.' };
+    return { ...base, wildcard, status: 'error', record: null, selector: '', details: 'No pudimos revisar DKIM porque el DNS no respondió.', recommendation: 'Probá de nuevo en unos minutos.' };
+  }
+
+  const active = keys.filter((k) => !k.revoked);
+  if (wildcard) {
+    return {
+      ...base, keys, wildcard,
+      status: 'unverified', record: null, selector: '',
+      details: 'No pudimos verificarla: tu DNS responde a cualquier nombre bajo _domainkey, así que no podemos saber cuál es tu selector real. No resta puntos.',
+      recommendation: UNVERIFIED_REC,
+    };
   }
   if (active.length > 0) {
-    const names = active.map((k) => `"${k.selector}"`).join(', ');
-    return { status: 'pass', record: first.record, selector: first.selector, keys, checkedSelectors: selectors, details: `DKIM encontrado (${names}). Tus mails van firmados.`, recommendation: 'Tu DKIM está bien configurado.' };
-  }
-  if (keys.length > 0) {
-    return { status: 'warning', record: first.record, selector: first.selector, keys, checkedSelectors: selectors, details: `Encontramos una clave DKIM "${first.selector}" pero está revocada (p= vacío), así que no firma nada.`, recommendation: 'Generá una clave nueva desde tu proveedor de email y publicala en el DNS.' };
+    const k = active[0];
+    const names = active.map((x) => `"${x.selector}"${x.provider ? ` (${x.provider})` : ''}`).join(', ');
+    return {
+      ...base, keys, wildcard, provider: k.provider,
+      status: 'pass', record: k.record, selector: k.selector,
+      details: `DKIM encontrado: ${names}. Tus mails van firmados.`,
+      recommendation: 'Tu DKIM está bien configurado.',
+    };
   }
   return {
-    status: 'warning',
-    record: null,
-    selector: '',
-    keys,
-    checkedSelectors: selectors,
-    details: 'No encontramos DKIM con los nombres más comunes. Puede que uses otro nombre (selector) o que no esté activado.',
-    recommendation: 'Revisá en tu proveedor de email (Google, Microsoft, Brevo, etc.) cómo activar DKIM, o ingresá tu selector si lo conocés.',
+    ...base, keys, wildcard,
+    status: 'unverified',
+    record: keys[0]?.record ?? null,
+    selector: keys[0]?.selector ?? '',
+    provider: keys[0]?.provider ?? null,
+    details: keys.length > 0
+      ? `No pudimos verificarla: solo encontramos claves vacías o en reserva (${keys.map((k) => `"${k.selector}"`).join(', ')}). Tu proveedor puede estar usando otro selector. No resta puntos.`
+      : `No pudimos verificarla: probamos ${checked.length} selectores comunes y ninguno respondió. Muchos proveedores usan nombres propios que no se pueden adivinar. No resta puntos.`,
+    recommendation: UNVERIFIED_REC,
   };
 }

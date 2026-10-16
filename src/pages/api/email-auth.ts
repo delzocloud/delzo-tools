@@ -17,11 +17,8 @@ export const GET: APIRoute = async ({ url }) => {
 
   try {
     if (!(await domainExists(domain))) return json({ error: NXDOMAIN_MSG, code: 'NXDOMAIN' }, 404);
-    const [spf, dmarc, dkim] = await Promise.all([
-      analyzeSpf(domain),
-      analyzeDmarc(domain),
-      analyzeDkim(domain, undefined, selector),
-    ]);
+    const [spf, dmarc] = await Promise.all([analyzeSpf(domain), analyzeDmarc(domain)]);
+    const dkim = await analyzeDkim(domain, undefined, { extraSelector: selector, spfRecord: spf.record });
     const score = computeEmailScore(spf, dmarc, dkim);
     const incomplete = [spf, dmarc, dkim].some((r) => r.status === 'error');
     return json({ domain, score, incomplete, spf, dmarc, dkim });

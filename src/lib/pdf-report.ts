@@ -3,7 +3,7 @@ import { jsPDF } from 'jspdf';
 import { applyPlugin } from 'jspdf-autotable';
 applyPlugin(jsPDF);
 
-const ST: Record<string, string> = { pass: 'BIEN', warning: 'REVISAR', fail: 'MAL', error: 'SIN DATOS' };
+const ST: Record<string, string> = { pass: 'BIEN', warning: 'REVISAR', fail: 'MAL', error: 'SIN DATOS', unverified: 'SIN VERIFICAR' };
 
 interface ReportData {
   domain: string;
@@ -165,7 +165,7 @@ export function generatePDF(data: ReportData) {
     const emailRows = [
       ['SPF', ST[es.spf.status] ?? es.spf.status, `${es.score.spfScore}/30`, es.spf.details, es.spf.recommendation],
       ['DMARC', ST[es.dmarc.status] ?? es.dmarc.status, `${es.score.dmarcScore}/40`, es.dmarc.details, es.dmarc.recommendation],
-      ['DKIM', ST[es.dkim.status] ?? es.dkim.status, `${es.score.dkimScore}/30`, es.dkim.details, es.dkim.recommendation],
+      ['DKIM', ST[es.dkim.status] ?? es.dkim.status, es.score.dkimScore === null ? 'sin verificar' : `${es.score.dkimScore}/30`, es.dkim.details, es.dkim.recommendation],
     ];
 
     (doc as any).autoTable({

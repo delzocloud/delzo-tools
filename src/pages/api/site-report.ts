@@ -36,11 +36,9 @@ export const GET: APIRoute = async ({ url }) => {
   const [emailResult, headersResult, dnsResult, certsResult] = await Promise.allSettled([
     // Email Security
     (async () => {
-      const [spf, dmarc, dkim] = await Promise.all([
-        analyzeSpf(domain),
-        analyzeDmarc(domain),
-        analyzeDkim(domain),
-      ]);
+      const [spf, dmarc] = await Promise.all([analyzeSpf(domain), analyzeDmarc(domain)]);
+      // Fewer DKIM probes here: the full report also fetches headers, DNS and certificates.
+      const dkim = await analyzeDkim(domain, undefined, { spfRecord: spf.record, maxProbes: 12 });
       const score = computeEmailScore(spf, dmarc, dkim);
       return { domain, score, spf, dmarc, dkim };
     })(),

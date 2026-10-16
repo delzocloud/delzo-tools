@@ -279,6 +279,7 @@ label {
   color: #DC2626;
 }
 
+.badge-unverified,
 .badge-error {
   background: rgba(107, 114, 128, 0.12);
   color: #374151;

@@ -105,7 +105,7 @@ describe('DKIM and score', () => {
     expect(parseDkim('v=DKIM1; k=rsa; p=')).toEqual({ valid: true, revoked: true });
     expect(parseDkim('v=DKIM1; p=MIIB')).toEqual({ valid: true, revoked: false });
   });
-  it('finds brevo selector and scores reject above quarantine, no points without DKIM', async () => {
+  it('finds brevo selector and scores reject above quarantine, unverified DKIM is not penalized', async () => {
     const z = zone({
       'a.com': ['v=spf1 -all'],
       '_dmarc.a.com': ['v=DMARC1; p=reject; rua=mailto:x@a.com'],
@@ -119,7 +119,10 @@ describe('DKIM and score', () => {
     expect(reject.total).toBe(100);
     expect(reject.dmarcScore).toBeGreaterThan(quarantine.dmarcScore);
     const noDkim = await analyzeDkim('a.com', zone({}));
-    expect(computeEmailScore(spf, await analyzeDmarc('a.com', z), noDkim).dkimScore).toBe(0);
+    expect(noDkim.status).toBe('unverified');
+    const sc = computeEmailScore(spf, await analyzeDmarc('a.com', z), noDkim);
+    expect(sc.dkimScore).toBeNull();
+    expect(sc.total).toBe(100); // 30 + 40 out of 70, scaled
   });
 });
 

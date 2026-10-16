@@ -71,9 +71,13 @@ export function joinTxt(data: string): string {
   return parts.map((p) => p.slice(1, -1).replace(/\\(["\\])/g, '$1')).join('');
 }
 
-export async function queryTxt(name: string): Promise<{ nxdomain: boolean; records: string[] }> {
+export async function queryTxt(name: string): Promise<{ nxdomain: boolean; records: string[]; cnames?: string[] }> {
   const r = await queryDns(name, 'TXT');
-  return { nxdomain: isNxDomain(r), records: answersOfType(r, 'TXT').map((a) => joinTxt(a.data)) };
+  return {
+    nxdomain: isNxDomain(r),
+    records: answersOfType(r, 'TXT').map((a) => joinTxt(a.data)),
+    cnames: answersOfType(r, 'CNAME').map((a) => a.data.replace(/\.$/, '').toLowerCase()),
+  };
 }
 
 export function getRecordTypeName(typeNum: number): string {

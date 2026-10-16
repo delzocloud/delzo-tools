@@ -1,5 +1,5 @@
 /** 'error' = we could not check (DNS timeout etc.), not the same as a bad config. */
-export type AuthStatus = 'pass' | 'warning' | 'fail' | 'error';
+export type AuthStatus = 'pass' | 'warning' | 'fail' | 'error' | 'unverified';
 
 export type SpfQualifier = '+' | '-' | '~' | '?';
 
@@ -30,6 +30,8 @@ export interface DkimKey {
   selector: string;
   record: string;
   revoked: boolean;
+  /** Provider guessed from the CNAME target or the selector name. */
+  provider: string | null;
 }
 
 export interface DkimResult {
@@ -38,6 +40,9 @@ export interface DkimResult {
   selector: string;
   keys: DkimKey[];
   checkedSelectors: string[];
+  provider: string | null;
+  /** _domainkey answers any label (wildcard): hits are not reliable. */
+  wildcard: boolean;
   details: string;
   recommendation: string;
 }
