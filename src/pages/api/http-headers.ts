@@ -1,6 +1,8 @@
 export const prerender = false;
 
 import type { APIRoute } from 'astro';
+import { json, publicError } from '../../lib/http';
+import { safeFetch, checkUrlSyntax } from '../../lib/url-guard';
 
 interface HeaderInfo {
   name: string;
@@ -36,43 +38,19 @@ export const GET: APIRoute = async ({ url }) => {
     return json({ error: 'Ingresá una URL.' }, 400);
   }
 
-  const normalized = normalizeUrl(targetUrl);
-  if (!normalized) {
-    return json({ error: 'URL inválida.' }, 400);
-  }
-
   try {
-    const result = await fetchHeaders(normalized);
-    return json(result);
-  } catch (err: any) {
-    if (err.name === 'AbortError') {
-      return json({ error: 'Timeout: el sitio no respondió en 15 segundos.' }, 504);
-    }
-    return json({ error: err.message || 'Error al obtener headers.' }, 500);
+    const normalized = checkUrlSyntax(targetUrl).toString();
+    return json(await fetchHeaders(normalized));
+  } catch (err) {
+    return json({ error: publicError(err, 'No pudimos obtener los headers del sitio.') }, 502);
   }
 };
 
 async function fetchHeaders(targetUrl: string): Promise<HeadersResult> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
   const startTime = performance.now();
-
   try {
-    const response = await fetch(targetUrl, {
-      method: 'GET',
-      redirect: 'follow',
-      signal: controller.signal,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'DNT': '1',
-        'Connection': 'keep-alive',
-      },
-    });
-
-    clearTimeout(timeout);
+    const { response, finalUrl } = await safeFetch(targetUrl, { method: 'GET', timeoutMs: TIMEOUT_MS });
+    try { await response.body?.cancel(); } catch {}
     const timing = Math.round(performance.now() - startTime);
 
     const headers: HeaderInfo[] = [];
@@ -112,7 +90,7 @@ async function fetchHeaders(targetUrl: string): Promise<HeadersResult> {
 
     return {
       url: targetUrl,
-      finalUrl: response.url,
+      finalUrl,
       status: response.status,
       statusText: getStatusText(response.status),
       timing,
@@ -121,7 +99,6 @@ async function fetchHeaders(targetUrl: string): Promise<HeadersResult> {
     };
 
   } catch (err) {
-    clearTimeout(timeout);
     throw err;
   }
 }
@@ -183,21 +160,6 @@ function getHeaderDescription(headerName: string): string {
   return descriptions[headerName.toLowerCase()] || '';
 }
 
-function normalizeUrl(input: string): string | null {
-  let url = input.trim();
-  if (!url.match(/^https?:\/\//i)) {
-    url = 'https://' + url;
-  }
-  try {
-    const parsed = new URL(url);
-    parsed.username = '';
-    parsed.password = '';
-    return parsed.toString();
-  } catch {
-    return null;
-  }
-}
-
 function getStatusText(status: number): string {
   const texts: Record<number, string> = {
     200: 'OK',
@@ -218,11 +180,4 @@ function getStatusText(status: number): string {
     503: 'Service Unavailable',
   };
   return texts[status] || 'Unknown';
-}
-
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
 }

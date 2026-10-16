@@ -2,37 +2,27 @@ export const prerender = false;
 
 import type { APIRoute } from 'astro';
 import { analyzeSpf, analyzeDmarc, analyzeDkim, computeEmailScore } from '../../lib/dns-parser';
+import { json, normalizeDomain, publicError } from '../../lib/http';
+import { domainExists, NXDOMAIN_MSG } from '../../lib/domain-check';
 
-const DOMAIN_RE = /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+const SELECTOR_RE = /^[a-z0-9]([a-z0-9._-]{0,62})$/i;
 
 export const GET: APIRoute = async ({ url }) => {
-  const domain = url.searchParams.get('domain')?.trim().toLowerCase();
-
-  if (!domain) {
-    return json({ error: 'El parámetro "domain" es requerido.' }, 400);
-  }
-
-  if (!DOMAIN_RE.test(domain)) {
-    return json({ error: 'Dominio inválido.' }, 400);
-  }
+  const raw = url.searchParams.get('domain');
+  if (!raw?.trim()) return json({ error: 'Ingresá un dominio.' }, 400);
+  const domain = normalizeDomain(raw);
+  if (!domain) return json({ error: 'Ese dominio no parece válido. Ejemplo: tuempresa.com.ar' }, 400);
+  const selector = url.searchParams.get('selector')?.trim() || undefined;
+  if (selector && !SELECTOR_RE.test(selector)) return json({ error: 'El selector DKIM no es válido.' }, 400);
 
   try {
-    const [spf, dmarc, dkim] = await Promise.all([
-      analyzeSpf(domain),
-      analyzeDmarc(domain),
-      analyzeDkim(domain),
-    ]);
-
+    if (!(await domainExists(domain))) return json({ error: NXDOMAIN_MSG, code: 'NXDOMAIN' }, 404);
+    const [spf, dmarc] = await Promise.all([analyzeSpf(domain), analyzeDmarc(domain)]);
+    const dkim = await analyzeDkim(domain, undefined, { extraSelector: selector, spfRecord: spf.record });
     const score = computeEmailScore(spf, dmarc, dkim);
-    return json({ domain, score, spf, dmarc, dkim });
-  } catch (err: any) {
-    return json({ error: err.message || 'Error al analizar la autenticación de email.' }, 500);
+    const incomplete = [spf, dmarc, dkim].some((r) => r.status === 'error');
+    return json({ domain, score, incomplete, spf, dmarc, dkim });
+  } catch (err) {
+    return json({ error: publicError(err, 'No pudimos analizar el dominio. Probá de nuevo en un rato.') }, 502);
   }
 };
-
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
-}

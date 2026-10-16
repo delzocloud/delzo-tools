@@ -1,11 +1,12 @@
 ---
 import ToolLayout from '../components/ToolLayout.astro';
+import LeadCta from '../components/LeadCta.astro';
 ---
 
 <ToolLayout
-  title="Site Security Report"
+  title="Reporte de seguridad del sitio"
   description="Generá un reporte PDF completo de seguridad para cualquier dominio. Email, headers, DNS y certificados."
-  heading="Site Security Report"
+  heading="Reporte de seguridad del sitio"
   subheading="Analizá la seguridad de cualquier dominio y descargá un reporte PDF completo."
 >
   <div slot="form">
@@ -29,11 +30,11 @@ import ToolLayout from '../components/ToolLayout.astro';
     <div class="error-msg" id="error"></div>
   </div>
 
-  <div slot="results" id="results-container" style="display:none;">
+  <div slot="results" id="results-container" style="display:none;" aria-live="polite">
     <div class="grade-banner" id="grade-banner">
       <div class="grade-badge" id="grade-badge"></div>
       <div class="grade-info">
-        <div class="grade-label">Score General de Seguridad</div>
+        <div class="grade-label">Nota general de seguridad</div>
         <div class="grade-score" id="grade-score"></div>
         <div class="score-bar"><div class="score-bar-fill" id="score-bar-fill"></div></div>
       </div>
@@ -48,6 +49,7 @@ import ToolLayout from '../components/ToolLayout.astro';
       </button>
       <p class="download-hint">El reporte incluye Email Security, Security Headers, DNS y Certificados SSL/TLS.</p>
     </div>
+    <LeadCta tool="site-report" />
   </div>
 </ToolLayout>
 
@@ -298,31 +300,31 @@ import ToolLayout from '../components/ToolLayout.astro';
       if (data.emailSecurity) {
         grid.innerHTML += `
           <div class="summary-card">
-            <div class="summary-card-title">Email Security</div>
+            <div class="summary-card-title">Email</div>
             <div class="summary-card-score">${data.emailSecurity.score.total}/100
               <span class="summary-card-grade" style="color: var(--${data.emailSecurity.score.grade.color === 'green' ? 'verde' : data.emailSecurity.score.grade.color === 'yellow' ? 'amarillo' : 'rojo'})">${escapeHtml(data.emailSecurity.score.grade.grade)}</span>
             </div>
           </div>`;
       } else {
-        grid.innerHTML += `<div class="summary-card"><div class="summary-card-title">Email Security</div><div class="summary-card-info">Error al analizar</div></div>`;
+        grid.innerHTML += `<div class="summary-card"><div class="summary-card-title">Email</div><div class="summary-card-info">Error al analizar</div></div>`;
       }
 
       if (data.securityHeaders) {
         grid.innerHTML += `
           <div class="summary-card">
-            <div class="summary-card-title">Security Headers</div>
+            <div class="summary-card-title">Headers de seguridad</div>
             <div class="summary-card-score">${data.securityHeaders.score.total}/100
               <span class="summary-card-grade" style="color: var(--${data.securityHeaders.score.grade.color === 'green' ? 'verde' : data.securityHeaders.score.grade.color === 'yellow' ? 'amarillo' : 'rojo'})">${escapeHtml(data.securityHeaders.score.grade.grade)}</span>
             </div>
           </div>`;
       } else {
-        grid.innerHTML += `<div class="summary-card"><div class="summary-card-title">Security Headers</div><div class="summary-card-info">Error al verificar</div></div>`;
+        grid.innerHTML += `<div class="summary-card"><div class="summary-card-title">Headers de seguridad</div><div class="summary-card-info">Error al verificar</div></div>`;
       }
 
       const dnsCount = data.dns ? (data.dns.a.length + data.dns.mx.length + data.dns.ns.length + data.dns.txt.length) : 0;
       grid.innerHTML += `
         <div class="summary-card">
-          <div class="summary-card-title">DNS Records</div>
+          <div class="summary-card-title">Registros DNS</div>
           <div class="summary-card-info">${data.dns ? `${dnsCount} registros encontrados` : 'Error al consultar'}</div>
         </div>`;
 
@@ -334,6 +336,7 @@ import ToolLayout from '../components/ToolLayout.astro';
         </div>`;
 
       container.style.display = 'block';
+      (window as any).delzoShowCta?.('site-report', data.domain, data.overallScore.grade.grade);
       btn.removeAttribute('disabled');
     } catch {
       clearInterval(progressInterval);

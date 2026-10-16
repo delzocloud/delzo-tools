@@ -1,6 +1,7 @@
 export const prerender = false;
 
 import type { APIRoute } from 'astro';
+import { json, normalizeDomain, publicError } from '../../lib/http';
 
 interface SubdomainResult {
   name: string;
@@ -16,7 +17,7 @@ export const GET: APIRoute = async ({ url }) => {
     return json({ error: 'Ingresá un dominio.' }, 400);
   }
 
-  if (!isValidDomain(domain)) {
+  if (!normalizeDomain(domain)) {
     return json({ error: 'Dominio inválido.' }, 400);
   }
 
@@ -27,8 +28,8 @@ export const GET: APIRoute = async ({ url }) => {
       subdomains, 
       total: subdomains.length 
     });
-  } catch (err: any) {
-    return json({ error: err.message || 'Error al buscar subdominios.' }, 500);
+  } catch (err) {
+    return json({ error: publicError(err, 'Error al buscar subdominios.') }, 500);
   }
 };
 
@@ -107,15 +108,4 @@ async function findSubdomains(domain: string): Promise<SubdomainResult[]> {
   }
 }
 
-function isValidDomain(domain: string): boolean {
-  // Basic domain validation
-  const pattern = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$/i;
-  return pattern.test(domain) && domain.includes('.') && domain.length <= 253;
-}
 
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
-}

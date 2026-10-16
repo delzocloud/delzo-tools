@@ -33,7 +33,7 @@ export async function fetchCertificates(domain: string, includeExpired: boolean)
   const crtUrl = `https://crt.sh/?q=${encodeURIComponent(domain)}&output=json`;
   const res = await fetch(crtUrl, {
     signal: controller.signal,
-    headers: { 'User-Agent': 'DelzoCloud-CertMonitor/1.0' },
+    headers: { 'User-Agent': 'DelzoTools/1.0 (+https://tools.delzo.cloud)' },
   });
 
   clearTimeout(timeout);

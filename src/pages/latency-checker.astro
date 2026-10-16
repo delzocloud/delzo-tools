@@ -3,10 +3,10 @@ import ToolLayout from '../components/ToolLayout.astro';
 ---
 
 <ToolLayout
-  title="Latency Checker"
-  description="Medí el tiempo de respuesta (TTFB) de cualquier sitio web desde múltiples ubicaciones globales."
-  heading="Latency Checker"
-  subheading="Medí el tiempo de respuesta desde diferentes ubicaciones alrededor del mundo."
+  title="Medidor de latencia"
+  description="Medí cuánto tarda en responder cualquier sitio web, con mediciones reales desde Cloudflare."
+  heading="Medidor de latencia"
+  subheading="Medí cuánto tarda en responder un sitio. Hacemos 3 mediciones reales desde el datacenter de Cloudflare más cercano a vos."
 >
   <div slot="form">
     <div class="form-row">
@@ -22,49 +22,52 @@ import ToolLayout from '../components/ToolLayout.astro';
       </div>
       <button class="btn" id="check-btn">Medir</button>
     </div>
-    <div class="loading" id="loading"><div class="spinner"></div> Midiendo latencia desde múltiples ubicaciones...</div>
+    <div class="loading" id="loading"><div class="spinner"></div> Midiendo...</div>
     <div class="error-msg" id="error"></div>
   </div>
 
-  <div slot="results" id="results-container" style="display:none;">
+  <div slot="results" id="results-container" style="display:none;" aria-live="polite">
+    <p class="honest-note" id="origin-note"></p>
     <div class="summary-cards">
       <div class="summary-card card fastest">
-        <div class="summary-label">Más rápido</div>
+        <div class="summary-label">Mejor</div>
         <div class="summary-value" id="fastest-value">--</div>
-        <div class="summary-location" id="fastest-location">--</div>
+        <div class="summary-location">de 3 mediciones</div>
       </div>
       <div class="summary-card card average">
-        <div class="summary-label">Promedio global</div>
+        <div class="summary-label">Mediana</div>
         <div class="summary-value" id="average-value">--</div>
-        <div class="summary-location">Todos los edges</div>
+        <div class="summary-location">valor típico</div>
       </div>
       <div class="summary-card card slowest">
-        <div class="summary-label">Más lento</div>
+        <div class="summary-label">Peor</div>
         <div class="summary-value" id="slowest-value">--</div>
-        <div class="summary-location" id="slowest-location">--</div>
+        <div class="summary-location">de 3 mediciones</div>
       </div>
     </div>
 
     <div class="latency-chart card">
       <div class="chart-header">
-        <h3>Latencia por región</h3>
+        <h3>Mediciones</h3>
         <div class="chart-legend">
-          <span class="legend-item fast"><span class="dot"></span>Rápido (&lt;100ms)</span>
-          <span class="legend-item medium"><span class="dot"></span>Medio (100-500ms)</span>
-          <span class="legend-item slow"><span class="dot"></span>Lento (&gt;500ms)</span>
+          <span class="legend-item fast"><span class="dot"></span>Rápido (&lt;300ms)</span>
+          <span class="legend-item medium"><span class="dot"></span>Medio (300 a 1000ms)</span>
+          <span class="legend-item slow"><span class="dot"></span>Lento (&gt;1000ms)</span>
         </div>
       </div>
       <div class="chart-body" id="chart-body"></div>
     </div>
 
     <div class="insights card" id="insights">
-      <h3>Análisis</h3>
+      <h3>Qué significa</h3>
       <div class="insights-content" id="insights-content"></div>
     </div>
   </div>
 </ToolLayout>
 
 <style>
+  .honest-note { font-size: 0.9rem; color: var(--gris-medio); margin-bottom: 1rem; }
+
   .form-row {
     display: flex;
     gap: 0.75rem;
@@ -341,166 +344,70 @@ import ToolLayout from '../components/ToolLayout.astro';
   const error = document.getElementById('error')!;
   const container = document.getElementById('results-container')!;
 
-  // Group regions by continent
-  const REGION_GROUPS: Record<string, string[]> = {
-    'Tu ubicación': ['CUR'],
-    'Sudamérica': ['EZE', 'SCL', 'GRU'],
-    'Norteamérica': ['MIA', 'LAX'],
-    'Europa': ['LHR', 'FRA'],
-    'Asia-Pacífico': ['SIN', 'NRT', 'SYD'],
-  };
+  const speed = (ms: number) => (ms < 300 ? 'fast' : ms < 1000 ? 'medium' : 'slow');
 
   async function check() {
     const url = urlInput.value.trim();
-
     error.classList.remove('active');
     container.style.display = 'none';
-    loading.classList.add('active');
-
     if (!url) {
-      loading.classList.remove('active');
       error.textContent = 'Ingresá una URL o dominio.';
       error.classList.add('active');
       return;
     }
-
+    loading.classList.add('active');
     try {
       const res = await fetch(`/api/latency-checker?url=${encodeURIComponent(url)}`);
       const data = await res.json();
-
       loading.classList.remove('active');
-
       if (data.error) {
         error.textContent = data.error;
         error.classList.add('active');
         return;
       }
 
-      // Summary cards
-      document.getElementById('fastest-value')!.textContent = `${data.fastest.latency}ms`;
-      document.getElementById('fastest-location')!.textContent = data.fastest.region;
-      
-      document.getElementById('average-value')!.textContent = `${data.average}ms`;
-      
-      document.getElementById('slowest-value')!.textContent = `${data.slowest.latency}ms`;
-      document.getElementById('slowest-location')!.textContent = data.slowest.region;
+      const where = data.origin?.colo ? `el datacenter ${data.origin.colo} de Cloudflare` : 'un datacenter de Cloudflare';
+      document.getElementById('origin-note')!.textContent = `Medimos 3 veces desde ${where}, el más cercano a vos. Es una medición real desde un solo lugar, no desde varios países.`;
+      document.getElementById('fastest-value')!.textContent = `${data.min}ms`;
+      document.getElementById('average-value')!.textContent = `${data.median}ms`;
+      document.getElementById('slowest-value')!.textContent = `${data.max}ms`;
 
-      // Chart - grouped by region
       const chartBody = document.getElementById('chart-body')!;
-      chartBody.innerHTML = '';
+      chartBody.replaceChildren();
+      const maxLatency = Math.max(...data.samples.map((s: any) => s.latency), 1);
+      data.samples.forEach((s: any, i: number) => {
+        const row = document.createElement('div');
+        row.className = 'latency-row';
+        const info = document.createElement('div');
+        info.className = 'region-info';
+        const name = document.createElement('div');
+        name.className = 'region-name';
+        name.textContent = `Medición ${i + 1}`;
+        const code = document.createElement('div');
+        code.className = 'region-code';
+        code.textContent = `HTTP ${s.status}`;
+        info.append(name, code);
+        const barC = document.createElement('div');
+        barC.className = 'bar-container';
+        const bar = document.createElement('div');
+        bar.className = `bar-fill ${speed(s.latency)}`;
+        bar.style.width = `${(s.latency / maxLatency) * 100}%`;
+        const val = document.createElement('span');
+        val.className = 'bar-value';
+        val.textContent = `${s.latency}ms`;
+        bar.append(val);
+        barC.append(bar);
+        row.append(info, barC);
+        chartBody.append(row);
+      });
 
-      const maxLatency = Math.max(...data.results.map((r: any) => r.latency));
-
-      // Group results by continent
-      const groupedResults: Record<string, any[]> = {};
-      for (const result of data.results) {
-        let groupName = 'Otros';
-        for (const [continent, codes] of Object.entries(REGION_GROUPS)) {
-          if (codes.includes(result.code)) {
-            groupName = continent;
-            break;
-          }
-        }
-        if (!groupedResults[groupName]) {
-          groupedResults[groupName] = [];
-        }
-        groupedResults[groupName].push(result);
-      }
-
-      // Render groups in order
-      const groupOrder = ['Tu ubicación', 'Sudamérica', 'Norteamérica', 'Europa', 'Asia-Pacífico', 'Otros'];
-      
-      for (const groupName of groupOrder) {
-        const groupResults = groupedResults[groupName];
-        if (!groupResults || groupResults.length === 0) continue;
-
-        const groupDiv = document.createElement('div');
-        groupDiv.className = 'region-group';
-        
-        // Add region header
-        groupDiv.innerHTML += `<div class="region-header">${groupName}</div>`;
-
-        // Add latency rows for this group
-        for (const result of groupResults) {
-          const percentage = (result.latency / maxLatency) * 100;
-          const speedClass = result.latency < 100 ? 'fast' : result.latency < 500 ? 'medium' : 'slow';
-          const isCurrent = result.code === 'CUR';
-
-          groupDiv.innerHTML += `
-            <div class="latency-row">
-              <div class="region-info">
-                <div class="region-name">${escapeHtml(result.region)} ${isCurrent ? '(Vos)' : ''}</div>
-                <div class="region-code">${result.code}</div>
-              </div>
-              <div class="bar-container">
-                <div class="bar-fill ${speedClass}" style="width: ${percentage}%">
-                  <span class="bar-value">${result.latency}ms</span>
-                </div>
-              </div>
-            </div>
-          `;
-        }
-
-        chartBody.appendChild(groupDiv);
-      }
-
-      // Insights
-      const insightsContent = document.getElementById('insights-content')!;
-      const latamLatency = data.results.find((r: any) => r.code === 'EZE')?.latency || data.average;
-      const usLatency = data.results.find((r: any) => r.code === 'MIA')?.latency || data.average;
-      const ratio = usLatency / latamLatency;
-
-      let insightsHtml = '';
-      
-      if (data.fastest.latency < 100) {
-        insightsHtml += `
-          <div class="insight-item">
-            <span class="insight-icon good">✓</span>
-            <span>Excelente latencia desde ${data.fastest.region}: ${data.fastest.latency}ms. El sitio responde muy rápido.</span>
-          </div>
-        `;
-      } else if (data.fastest.latency < 300) {
-        insightsHtml += `
-          <div class="insight-item">
-            <span class="insight-icon good">✓</span>
-            <span>Buena latencia desde ${data.fastest.region}: ${data.fastest.latency}ms.</span>
-          </div>
-        `;
-      } else {
-        insightsHtml += `
-          <div class="insight-item">
-            <span class="insight-icon warning">!</span>
-            <span>Latencia alta: ${data.fastest.latency}ms desde ${data.fastest.region}. Considerá usar un CDN.</span>
-          </div>
-        `;
-      }
-
-      if (ratio > 2) {
-        insightsHtml += `
-          <div class="insight-item">
-            <span class="insight-icon info">i</span>
-            <span>El sitio es ${ratio.toFixed(1)}x más lento desde USA que desde LATAM. Revisá tu configuración de CDN.</span>
-          </div>
-        `;
-      } else if (ratio < 0.8) {
-        insightsHtml += `
-          <div class="insight-item">
-            <span class="insight-icon good">✓</span>
-            <span>Distribución global balanceada. El sitio responde bien desde todas las regiones.</span>
-          </div>
-        `;
-      }
-
-      if (data.slowest.latency > data.fastest.latency * 3) {
-        insightsHtml += `
-          <div class="insight-item">
-            <span class="insight-icon warning">!</span>
-            <span>Gran diferencia entre regiones (${data.slowest.latency}ms vs ${data.fastest.latency}ms). Considerá usar un CDN global como Cloudflare.</span>
-          </div>
-        `;
-      }
-
-      insightsContent.innerHTML = insightsHtml;
+      const msg =
+        data.median < 300 ? 'Tu sitio responde rápido.' :
+        data.median < 1000 ? 'Tu sitio responde a un ritmo aceptable, pero se puede mejorar con caché o un CDN.' :
+        'Tu sitio tarda en responder. Un CDN, caché o un mejor hosting pueden ayudar mucho.';
+      const p = document.createElement('p');
+      p.textContent = `${msg} El número incluye redirecciones, DNS y conexión segura (HTTPS).`;
+      document.getElementById('insights-content')!.replaceChildren(p);
 
       container.style.display = 'block';
     } catch {
@@ -508,10 +415,6 @@ import ToolLayout from '../components/ToolLayout.astro';
       error.textContent = 'Error de conexión. Intentá de nuevo.';
       error.classList.add('active');
     }
-  }
-
-  function escapeHtml(str: string): string {
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   btn.addEventListener('click', check);

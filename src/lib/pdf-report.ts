@@ -1,6 +1,9 @@
 // Client-side PDF generation using jsPDF + jspdf-autotable
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import { applyPlugin } from 'jspdf-autotable';
+applyPlugin(jsPDF);
+
+const ST: Record<string, string> = { pass: 'BIEN', warning: 'REVISAR', fail: 'MAL', error: 'SIN DATOS', unverified: 'SIN VERIFICAR' };
 
 interface ReportData {
   domain: string;
@@ -26,7 +29,7 @@ export function generatePDF(data: ReportData) {
   function addFooter(pageNum: number) {
     doc.setFontSize(8);
     doc.setTextColor(150);
-    doc.text(`Generado por tools.delzo.cloud — ${date}`, margin, pageHeight - 10);
+    doc.text(`Generado por tools.delzo.cloud, ${date}`, margin, pageHeight - 10);
     doc.text(`Página ${pageNum}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
   }
 
@@ -37,7 +40,7 @@ export function generatePDF(data: ReportData) {
   }
 
   // ═══════════════════════════════════════════
-  // PAGE 1 — Cover + Summary
+  // PAGE 1 : Cover + Summary
   // ═══════════════════════════════════════════
   let y = 40;
 
@@ -85,7 +88,7 @@ export function generatePDF(data: ReportData) {
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(30, 30, 30);
-  doc.text('Score General', margin + 60, y + 15);
+  doc.text('Nota general', margin + 60, y + 15);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100);
@@ -96,23 +99,23 @@ export function generatePDF(data: ReportData) {
   const summaryRows: any[] = [];
 
   if (data.emailSecurity) {
-    summaryRows.push(['Email Security', `${data.emailSecurity.score.total}/100`, data.emailSecurity.score.grade.grade]);
+    summaryRows.push(['Seguridad del email', `${data.emailSecurity.score.total}/100`, data.emailSecurity.score.grade.grade]);
   } else {
-    summaryRows.push(['Email Security', 'Error', '—']);
+    summaryRows.push(['Seguridad del email', 'Error', '-']);
   }
 
   if (data.securityHeaders) {
-    summaryRows.push(['Security Headers', `${data.securityHeaders.score.total}/100`, data.securityHeaders.score.grade.grade]);
+    summaryRows.push(['Headers de seguridad', `${data.securityHeaders.score.total}/100`, data.securityHeaders.score.grade.grade]);
   } else {
-    summaryRows.push(['Security Headers', 'Error', '—']);
+    summaryRows.push(['Headers de seguridad', 'Error', '-']);
   }
 
-  summaryRows.push(['DNS Records', 'Informativo', '—']);
-  summaryRows.push(['Certificados SSL/TLS', 'Informativo', '—']);
+  summaryRows.push(['Registros DNS', 'Informativo', '-']);
+  summaryRows.push(['Certificados SSL/TLS', 'Informativo', '-']);
 
   (doc as any).autoTable({
     startY: y,
-    head: [['Sección', 'Score', 'Grade']],
+    head: [['Sección', 'Puntos', 'Nota']],
     body: summaryRows,
     margin: { left: margin, right: margin },
     headStyles: { fillColor: [30, 30, 30], fontSize: 10 },
@@ -139,7 +142,7 @@ export function generatePDF(data: ReportData) {
   addFooter(1);
 
   // ═══════════════════════════════════════════
-  // PAGE 2 — Email Security
+  // PAGE 2 : Email Security
   // ═══════════════════════════════════════════
   doc.addPage();
   y = 25;
@@ -147,7 +150,7 @@ export function generatePDF(data: ReportData) {
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(30, 30, 30);
-  doc.text('Email Security', margin, y);
+  doc.text('Seguridad del email', margin, y);
 
   if (data.emailSecurity) {
     const es = data.emailSecurity;
@@ -156,18 +159,18 @@ export function generatePDF(data: ReportData) {
     doc.setFont('helvetica', 'normal');
     const esBadgeColor = gradeColor(es.score.grade.color);
     doc.setTextColor(...esBadgeColor);
-    doc.text(`Score: ${es.score.total}/100 (${es.score.grade.grade})`, margin, y);
+    doc.text(`Puntaje: ${es.score.total}/100 (${es.score.grade.grade})`, margin, y);
 
     y += 10;
     const emailRows = [
-      ['SPF', es.spf.status.toUpperCase(), `${es.score.spfScore}/30`, es.spf.details, es.spf.recommendation],
-      ['DMARC', es.dmarc.status.toUpperCase(), `${es.score.dmarcScore}/40`, es.dmarc.details, es.dmarc.recommendation],
-      ['DKIM', es.dkim.status.toUpperCase(), `${es.score.dkimScore}/30`, es.dkim.details, es.dkim.recommendation],
+      ['SPF', ST[es.spf.status] ?? es.spf.status, `${es.score.spfScore}/30`, es.spf.details, es.spf.recommendation],
+      ['DMARC', ST[es.dmarc.status] ?? es.dmarc.status, `${es.score.dmarcScore}/40`, es.dmarc.details, es.dmarc.recommendation],
+      ['DKIM', ST[es.dkim.status] ?? es.dkim.status, es.score.dkimScore === null ? 'sin verificar' : `${es.score.dkimScore}/30`, es.dkim.details, es.dkim.recommendation],
     ];
 
     (doc as any).autoTable({
       startY: y,
-      head: [['Protocolo', 'Status', 'Score', 'Detalle', 'Recomendación']],
+      head: [['Protocolo', 'Estado', 'Puntos', 'Detalle', 'Recomendación']],
       body: emailRows,
       margin: { left: margin, right: margin },
       headStyles: { fillColor: [30, 30, 30], fontSize: 9 },
@@ -225,7 +228,7 @@ export function generatePDF(data: ReportData) {
   addFooter(2);
 
   // ═══════════════════════════════════════════
-  // PAGE 3 — Security Headers
+  // PAGE 3 : Security Headers
   // ═══════════════════════════════════════════
   doc.addPage();
   y = 25;
@@ -233,7 +236,7 @@ export function generatePDF(data: ReportData) {
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(30, 30, 30);
-  doc.text('Security Headers', margin, y);
+  doc.text('Headers de seguridad', margin, y);
 
   if (data.securityHeaders) {
     const sh = data.securityHeaders;
@@ -242,17 +245,17 @@ export function generatePDF(data: ReportData) {
     doc.setFont('helvetica', 'normal');
     const shBadgeColor = gradeColor(sh.score.grade.color);
     doc.setTextColor(...shBadgeColor);
-    doc.text(`Score: ${sh.score.total}/100 (${sh.score.grade.grade})`, margin, y);
+    doc.text(`Puntaje: ${sh.score.total}/100 (${sh.score.grade.grade})`, margin, y);
 
     y += 10;
     const headerRows = sh.headers.map((h: any) => {
-      const statusLabel = h.status === 'pass' ? 'PASS' : h.status === 'warning' ? 'WARNING' : 'FAIL';
-      return [h.name, statusLabel, h.value || '—', `${h.score}/${h.weight}`];
+      const statusLabel = ST[h.status] ?? h.status;
+      return [h.name, statusLabel, h.value || '-', `${h.score}/${h.weight}`];
     });
 
     (doc as any).autoTable({
       startY: y,
-      head: [['Header', 'Status', 'Valor', 'Score']],
+      head: [['Header', 'Estado', 'Valor', 'Puntos']],
       body: headerRows,
       margin: { left: margin, right: margin },
       headStyles: { fillColor: [30, 30, 30], fontSize: 9 },
@@ -282,7 +285,7 @@ export function generatePDF(data: ReportData) {
   addFooter(3);
 
   // ═══════════════════════════════════════════
-  // PAGE 4 — DNS Records
+  // PAGE 4 : DNS Records
   // ═══════════════════════════════════════════
   doc.addPage();
   y = 25;
@@ -290,13 +293,13 @@ export function generatePDF(data: ReportData) {
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(30, 30, 30);
-  doc.text('DNS Records', margin, y);
+  doc.text('Registros DNS', margin, y);
 
   y += 5;
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100);
-  doc.text('Sección informativa — no afecta el score general.', margin, y);
+  doc.text('Sección informativa: no afecta el score general.', margin, y);
 
   if (data.dns) {
     const dnsTypes = [
@@ -313,7 +316,7 @@ export function generatePDF(data: ReportData) {
           allRows.push([dt.label, r.data, String(r.TTL)]);
         }
       } else {
-        allRows.push([dt.label, 'Sin registros', '—']);
+        allRows.push([dt.label, 'Sin registros', '-']);
       }
     }
 
@@ -340,7 +343,7 @@ export function generatePDF(data: ReportData) {
   addFooter(4);
 
   // ═══════════════════════════════════════════
-  // PAGE 5 — Certificates
+  // PAGE 5 : Certificates
   // ═══════════════════════════════════════════
   doc.addPage();
   y = 25;
@@ -354,7 +357,7 @@ export function generatePDF(data: ReportData) {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100);
-  doc.text('Sección informativa — datos de Certificate Transparency (crt.sh).', margin, y);
+  doc.text('Sección informativa: datos de Certificate Transparency (crt.sh).', margin, y);
 
   if (data.certificates && data.certificates.certs.length > 0) {
     const certs = data.certificates.certs;
@@ -364,7 +367,7 @@ export function generatePDF(data: ReportData) {
 
     y += 8;
     doc.setTextColor(30, 30, 30);
-    doc.text(`Total: ${certs.length} certificados — ${valid} válidos, ${expiring} por vencer, ${expired} expirados`, margin, y);
+    doc.text(`Total: ${certs.length} certificados: ${valid} válidos, ${expiring} por vencer, ${expired} expirados`, margin, y);
 
     y += 8;
     // Show up to 20 most recent certs

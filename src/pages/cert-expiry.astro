@@ -3,9 +3,9 @@ import ToolLayout from '../components/ToolLayout.astro';
 ---
 
 <ToolLayout
-  title="Multi-domain Cert Expiry"
+  title="Vencimiento de certificados"
   description="Verificá la expiración de certificados SSL/TLS de múltiples dominios a la vez."
-  heading="Multi-domain Cert Expiry"
+  heading="Vencimiento de certificados"
   subheading="Ingresá hasta 10 dominios y visualizá sus certificados ordenados por expiración."
 >
   <div slot="form">
@@ -170,7 +170,7 @@ import ToolLayout from '../components/ToolLayout.astro';
         if (r.error) {
           return `<tr>
             <td><code>${esc(r.domain)}</code></td>
-            <td colspan="4">—</td>
+            <td colspan="4">-</td>
             <td><span class="badge-error">${esc(r.error)}</span></td>
           </tr>`;
         }

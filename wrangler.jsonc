@@ -8,7 +8,15 @@
     "directory": "dist",
     "binding": "ASSETS"
   },
+  // Production only. `wrangler preview` never deploys routes or custom domains
+  // ("Routes and Cron Triggers target production"), so PR previews cannot touch
+  // tools.delzo.cloud. Do not add previews_enabled here.
   "routes": [
     { "pattern": "tools.delzo.cloud", "custom_domain": true }
-  ]
+  ],
+  // Enables <preview>-delzo-tools.<subdomain>.workers.dev Preview URLs.
+  // Takes effect on the next production deploy (or the dashboard toggle).
+  "preview_urls": true,
+  // Required by `wrangler preview` (Worker Previews). Empty: same settings as production.
+  "previews": {}
 }

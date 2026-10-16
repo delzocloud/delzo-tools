@@ -1,11 +1,12 @@
 ---
 import ToolLayout from '../components/ToolLayout.astro';
+import LeadCta from '../components/LeadCta.astro';
 ---
 
 <ToolLayout
-  title="Security Headers Checker"
-  description="Verificá los headers HTTP de seguridad de cualquier sitio web. Score A+ a F."
-  heading="Security Headers Checker"
+  title="Headers de seguridad"
+  description="Verificá los headers HTTP de seguridad de cualquier sitio web. Nota de A+ a F."
+  heading="Headers de seguridad"
   subheading="Verificá los 7 headers HTTP de seguridad más importantes de cualquier sitio."
 >
   <div slot="form">
@@ -26,11 +27,11 @@ import ToolLayout from '../components/ToolLayout.astro';
     <div class="error-msg" id="error"></div>
   </div>
 
-  <div slot="results" id="results-container" style="display:none;">
+  <div slot="results" id="results-container" style="display:none;" aria-live="polite">
     <div class="grade-banner" id="grade-banner">
       <div class="grade-badge" id="grade-badge"></div>
       <div class="grade-info">
-        <div class="grade-label">Security Headers Score</div>
+        <div class="grade-label">Nota de headers de seguridad</div>
         <div class="grade-score" id="grade-score"></div>
         <div class="score-bar"><div class="score-bar-fill" id="score-bar-fill"></div></div>
       </div>
@@ -48,6 +49,7 @@ import ToolLayout from '../components/ToolLayout.astro';
         <tbody id="headers-body"></tbody>
       </table>
     </div>
+    <LeadCta tool="security-headers" />
   </div>
 </ToolLayout>
 
@@ -194,7 +196,7 @@ import ToolLayout from '../components/ToolLayout.astro';
       tbody.innerHTML = '';
 
       for (const h of data.headers) {
-        const statusLabels: Record<string, string> = { pass: '✓ Pass', warning: '⚠ Warning', fail: '✗ Fail' };
+        const statusLabels: Record<string, string> = { pass: '✓ Bien', warning: '⚠ Revisar', fail: '✗ Mal', error: '? Sin datos' };
         const valueHtml = h.value
           ? `<div class="header-value">${escapeHtml(h.value)}</div>`
           : '';
@@ -209,6 +211,7 @@ import ToolLayout from '../components/ToolLayout.astro';
       }
 
       container.style.display = 'block';
+      (window as any).delzoShowCta?.('security-headers', new URL(data.url).hostname, data.score.grade.grade);
     } catch {
       loading.classList.remove('active');
       error.textContent = 'Error de conexión. Intentá de nuevo.';

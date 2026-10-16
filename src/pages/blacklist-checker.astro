@@ -3,9 +3,9 @@ import ToolLayout from '../components/ToolLayout.astro';
 ---
 
 <ToolLayout
-  title="Blacklist Checker"
+  title="Listas negras (blacklists)"
   description="Verificá si IPs o dominios están en listas negras (DNSBL). Consultá múltiples IPs y 12 blacklists en paralelo."
-  heading="Blacklist Checker"
+  heading="Listas negras (blacklists)"
   subheading="Verificá si IPs o dominios están listados en las principales DNSBLs."
 >
   <div slot="form">
@@ -182,7 +182,7 @@ import ToolLayout from '../components/ToolLayout.astro';
         summaryCard.className = 'results-card card';
         summaryCard.innerHTML = `
           <div class="results-summary ${totalListed > 0 ? 'listed' : 'clean'}">
-            ${results.length} IPs verificadas — ${totalListed} listadas, ${totalClean} limpias
+            ${results.length} IPs verificadas: ${totalListed} listadas, ${totalClean} limpias
           </div>
         `;
         resultsContainer.appendChild(summaryCard);
@@ -206,8 +206,8 @@ import ToolLayout from '../components/ToolLayout.astro';
     const ipInfo = data.domain ? `${data.domain} (${data.ip})` : data.ip;
     const summaryClass = data.listed > 0 ? 'listed' : 'clean';
     const summaryText = data.listed > 0 
-      ? `${ipInfo} — Listado en ${data.listed}/${data.total} blacklists`
-      : `${ipInfo} — Limpio en ${data.total}/${data.total} blacklists`;
+      ? `${ipInfo}: Listado en ${data.listed}/${data.total} blacklists`
+      : `${ipInfo}: Limpio en ${data.total}/${data.total} blacklists`;
 
     card.innerHTML = `
       <div class="results-summary ${summaryClass}">${summaryText}</div>
@@ -224,7 +224,7 @@ import ToolLayout from '../components/ToolLayout.astro';
             <tr>
               <td><code>${esc(r.list)}</code></td>
               <td>${r.listed ? '<span class="badge-fail">Listado</span>' : '<span class="badge-pass">Limpio</span>'}</td>
-              <td>${r.response ? '<code>' + esc(r.response) + '</code>' : '—'}</td>
+              <td>${r.response ? '<code>' + esc(r.response) + '</code>' : '-'}</td>
             </tr>
           `).join('')}
         </tbody>

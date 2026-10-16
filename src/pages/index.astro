@@ -6,91 +6,91 @@ import ToolCard from '../components/ToolCard.astro';
 
 const tools = [
   {
-    title: 'Site Report',
+    title: 'Reporte del sitio',
     description: 'Generá un reporte PDF completo de seguridad: email, headers, DNS y certificados.',
     href: '/site-report',
     icon: '📄',
   },
   {
-    title: 'DNS Lookup',
+    title: 'Consulta DNS',
     description: 'Consultá registros DNS de cualquier dominio: A, AAAA, MX, TXT, CNAME, NS, SOA, PTR, SRV.',
     href: '/dns-lookup',
     icon: '🔍',
   },
   {
-    title: 'Email Security Grader',
-    description: 'Score de seguridad de email (0-100). Analizá SPF, DMARC y DKIM con grado A+ a F.',
+    title: 'Seguridad de tu email',
+    description: 'Revisá si tus mails pueden caer en spam o ser suplantados: SPF, DMARC y DKIM, con nota de A+ a F.',
     href: '/email-auth',
     icon: '📧',
   },
   {
-    title: 'CIDR Calculator',
+    title: 'Calculadora CIDR',
     description: 'Calculá red, broadcast, máscara, rango de hosts y cantidad de IPs utilizables.',
     href: '/cidr-calculator',
     icon: '🧮',
   },
   {
-    title: 'IP Geolocation',
+    title: 'Ubicación de una IP',
     description: 'Geolocalizá cualquier IP pública. Detectá tu IP automáticamente con mapa interactivo.',
     href: '/ip-geolocation',
     icon: '🌐',
   },
   {
-    title: 'Latency Checker',
-    description: 'Medí el tiempo de respuesta (TTFB) de cualquier sitio desde múltiples ubicaciones globales.',
+    title: 'Medidor de latencia',
+    description: 'Medí cuánto tarda en responder un sitio, con 3 mediciones reales desde Cloudflare.',
     href: '/latency-checker',
     icon: '⚡',
   },
   {
-    title: 'Security Headers',
-    description: 'Verificá los 7 headers HTTP de seguridad de cualquier sitio. Score A+ a F.',
+    title: 'Headers de seguridad',
+    description: 'Verificá los 7 headers HTTP de seguridad de cualquier sitio. Nota de A+ a F.',
     href: '/security-headers',
     icon: '🛡️',
   },
   {
-    title: 'HTTP Headers',
+    title: 'Headers HTTP',
     description: 'Obtené y analizá todos los headers HTTP de respuesta de cualquier sitio. Categorizados por tipo.',
     href: '/http-headers',
     icon: '📝',
   },
   {
-    title: 'HTTP Trace',
+    title: 'Seguir redirecciones',
     description: 'Seguí la cadena completa de redirecciones HTTP. Muestra status codes, timing y headers.',
     href: '/http-trace',
     icon: '↪️',
   },
   {
-    title: 'Subdomain Finder',
+    title: 'Buscador de subdominios',
     description: 'Descubrí subdominios públicos usando Certificate Transparency logs (crt.sh). Gratis, sin API keys.',
     href: '/subdomain-finder',
     icon: '🔎',
   },
   {
-    title: 'Cert Monitor',
+    title: 'Certificados emitidos',
     description: 'Consultá certificados SSL/TLS emitidos para un dominio via Certificate Transparency.',
     href: '/cert-monitor',
     icon: '🔐',
   },
   {
-    title: 'Blacklist Checker',
+    title: 'Listas negras (blacklists)',
     description: 'Verificá si una IP o dominio está en 12 listas negras (DNSBL) en paralelo.',
     href: '/blacklist-checker',
     icon: '🚫',
   },
   {
-    title: 'DNS Propagation',
+    title: 'Propagación DNS',
     description: 'Consultá un dominio contra 8 resolvers DNS públicos y verificá si propagó correctamente.',
     href: '/dns-propagation',
     icon: '🌍',
   },
   {
-    title: 'Cert Expiry',
+    title: 'Vencimiento de certificados',
     description: 'Verificá la expiración de certificados SSL/TLS de múltiples dominios a la vez.',
     href: '/cert-expiry',
     icon: '⏰',
   },
   {
-    title: 'MX Analyzer',
+    title: 'Servidores de correo (MX)',
     description: 'Analizá los registros MX de un dominio: proveedor, prioridades y redundancia.',
     href: '/mx-analyzer',
     icon: '📬',
@@ -99,7 +99,7 @@ const tools = [
 ---
 
 <BaseLayout
-  title="Herramientas de Networking Gratuitas"
+  title="Herramientas gratis para revisar tu dominio"
   description="Herramientas gratuitas de DNS, email, redes e IP para profesionales IT. Por delzo.cloud."
 >
   <div class="app-layout">
@@ -109,7 +109,7 @@ const tools = [
         <section class="hero">
           <div class="container">
             <h1>Herramientas de networking <span class="text-gradient">gratuitas</span></h1>
-            <p class="hero-sub">DNS, email, seguridad, redes e IP — todo en un solo lugar.</p>
+            <p class="hero-sub">DNS, email, seguridad, redes e IP, todo en un solo lugar.</p>
           </div>
         </section>
         <section class="tools-section">

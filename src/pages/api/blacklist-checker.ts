@@ -1,9 +1,9 @@
 export const prerender = false;
 
 import type { APIRoute } from 'astro';
+import { json, normalizeDomain, publicError } from '../../lib/http';
 import { checkBlacklists } from '../../lib/blacklist-checker';
 
-const DOMAIN_RE = /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
 const IP_RE = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
 
 export const GET: APIRoute = async ({ url }) => {
@@ -18,12 +18,16 @@ export const GET: APIRoute = async ({ url }) => {
     targets = [target];
   }
 
+  if (targets.length > 5) {
+    return json({ error: 'Podés revisar hasta 5 IPs o dominios por vez.' }, 400);
+  }
+
   if (targets.length === 0) {
     return json({ error: 'Ingresá al menos una IP o dominio.' }, 400);
   }
 
   // Validate all targets
-  const invalidTargets = targets.filter(t => !DOMAIN_RE.test(t) && !IP_RE.test(t));
+  const invalidTargets = targets.filter(t => !normalizeDomain(t) && !IP_RE.test(t));
   if (invalidTargets.length > 0) {
     return json({ error: `IPs o dominios inválidos: ${invalidTargets.join(', ')}` }, 400);
   }
@@ -34,10 +38,10 @@ export const GET: APIRoute = async ({ url }) => {
       targets.map(async (t) => {
         try {
           return await checkBlacklists(t);
-        } catch (err: any) {
+        } catch (err) {
           return {
             ip: t,
-            error: err.message || 'Error al verificar blacklists.',
+            error: publicError(err, 'Error al verificar blacklists.'),
             total: 0,
             listed: 0,
             clean: 0,
@@ -49,14 +53,8 @@ export const GET: APIRoute = async ({ url }) => {
 
     // Return single result for backwards compatibility, array for multiple
     return json(targets.length === 1 ? results[0] : results);
-  } catch (err: any) {
-    return json({ error: err.message || 'Error al verificar blacklists.' }, 500);
+  } catch (err) {
+    return json({ error: publicError(err, 'Error al verificar blacklists.') }, 500);
   }
 };
 
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
-}
