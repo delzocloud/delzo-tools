@@ -3,9 +3,9 @@ import ToolLayout from '../components/ToolLayout.astro';
 ---
 
 <ToolLayout
-  title="DNS Lookup"
+  title="Consulta DNS"
   description="Consultá registros DNS de cualquier dominio: A, AAAA, MX, TXT, CNAME, NS, SOA, PTR, SRV."
-  heading="DNS Lookup"
+  heading="Consulta DNS"
   subheading="Consultá los registros DNS de cualquier dominio usando Cloudflare DoH."
 >
   <div slot="form">
@@ -139,7 +139,7 @@ import ToolLayout from '../components/ToolLayout.astro';
       await navigator.clipboard.writeText(text);
       if (btn) {
         const originalText = btn.textContent;
-        btn.textContent = 'Copiado!';
+        btn.textContent = 'Copiado';
         btn.classList.add('copied');
         setTimeout(() => {
           btn.textContent = originalText;
@@ -185,7 +185,7 @@ import ToolLayout from '../components/ToolLayout.astro';
       }
 
       currentRecords = data.records;
-      metaCount.textContent = `${data.records.length} registro(s) encontrado(s) — ${data.queryTime}ms`;
+      metaCount.textContent = `${data.records.length} registro(s) encontrado(s), ${data.queryTime}ms`;
       
       tbody.innerHTML = data.records.map((r: any, index: number) => `
         <tr>

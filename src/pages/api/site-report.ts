@@ -1,13 +1,14 @@
 export const prerender = false;
 
 import type { APIRoute } from 'astro';
+import { json, normalizeDomain, publicError } from '../../lib/http';
 import { analyzeSpf, analyzeDmarc, analyzeDkim, computeEmailScore } from '../../lib/dns-parser';
 import { checkSecurityHeaders } from '../../lib/headers-checker';
 import { fetchCertificates } from '../../lib/cert-checker';
 import { queryDns, getRecordTypeName } from '../../lib/dns-client';
 import { computeGrade } from '../../lib/grading';
+import { domainExists, NXDOMAIN_MSG } from '../../lib/domain-check';
 
-const DOMAIN_RE = /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
 
 interface DnsRecords {
   a: { name: string; type: string; TTL: number; data: string }[];
@@ -17,14 +18,16 @@ interface DnsRecords {
 }
 
 export const GET: APIRoute = async ({ url }) => {
-  const domain = url.searchParams.get('domain')?.trim().toLowerCase();
+  const domain = normalizeDomain(url.searchParams.get('domain'));
 
   if (!domain) {
-    return json({ error: 'El parámetro "domain" es requerido.' }, 400);
+    return json({ error: 'Ingresá un dominio válido. Ejemplo: tuempresa.com.ar' }, 400);
   }
 
-  if (!DOMAIN_RE.test(domain)) {
-    return json({ error: 'Dominio inválido.' }, 400);
+  try {
+    if (!(await domainExists(domain))) return json({ error: NXDOMAIN_MSG, code: 'NXDOMAIN' }, 404);
+  } catch (err) {
+    return json({ error: publicError(err, 'No pudimos consultar el DNS.') }, 502);
   }
 
   const errors: string[] = [];
@@ -62,16 +65,16 @@ export const GET: APIRoute = async ({ url }) => {
 
   // Extract results, tracking errors
   const emailSecurity = emailResult.status === 'fulfilled' ? emailResult.value : null;
-  if (emailResult.status === 'rejected') errors.push(`Email Security: ${emailResult.reason?.message || 'Error desconocido'}`);
+  if (emailResult.status === 'rejected') errors.push(`Email: ${publicError(emailResult.reason, 'no se pudo revisar')}`);
 
   const securityHeaders = headersResult.status === 'fulfilled' ? headersResult.value : null;
-  if (headersResult.status === 'rejected') errors.push(`Security Headers: ${headersResult.reason?.message || 'Error desconocido'}`);
+  if (headersResult.status === 'rejected') errors.push(`Seguridad del sitio web: ${publicError(headersResult.reason, 'no se pudo revisar')}`);
 
   const dns = dnsResult.status === 'fulfilled' ? dnsResult.value : null;
-  if (dnsResult.status === 'rejected') errors.push(`DNS: ${dnsResult.reason?.message || 'Error desconocido'}`);
+  if (dnsResult.status === 'rejected') errors.push(`DNS: ${publicError(dnsResult.reason, 'no se pudo revisar')}`);
 
   const certificates = certsResult.status === 'fulfilled' ? certsResult.value : null;
-  if (certsResult.status === 'rejected') errors.push(`Certificados: ${certsResult.reason?.message || 'Error desconocido'}`);
+  if (certsResult.status === 'rejected') errors.push(`Certificados: ${publicError(certsResult.reason, 'no se pudo revisar')}`);
 
   // Compute overall score (weighted average of email + headers)
   let overallTotal = 0;
@@ -104,9 +107,3 @@ export const GET: APIRoute = async ({ url }) => {
   });
 };
 
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
-}

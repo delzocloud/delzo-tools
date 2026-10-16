@@ -1,0 +1,27 @@
+# tools.delzo.cloud
+
+> Herramientas gratis de delzo.cloud para revisar dominios, email y sitios web. En español, sin registro.
+
+## Email
+- [Seguridad de tu email](https://tools.delzo.cloud/email-auth): revisa SPF, DMARC y DKIM y da una nota de A+ a F. Sigue redirect= e include: de SPF, cuenta el límite de 10 consultas DNS y busca DMARC en el dominio principal.
+- [Servidores de correo (MX)](https://tools.delzo.cloud/mx-analyzer): proveedor de correo, prioridades y respaldo.
+- [Listas negras](https://tools.delzo.cloud/blacklist-checker): si una IP o dominio está en listas de spam (DNSBL).
+
+## Sitio web
+- [Reporte del sitio](https://tools.delzo.cloud/site-report): email, headers de seguridad, DNS y certificados en un PDF.
+- [Headers de seguridad](https://tools.delzo.cloud/security-headers)
+- [Headers HTTP](https://tools.delzo.cloud/http-headers)
+- [Seguir redirecciones](https://tools.delzo.cloud/http-trace)
+- [Medidor de latencia](https://tools.delzo.cloud/latency-checker): 3 mediciones reales desde un datacenter de Cloudflare.
+
+## DNS y red
+- [Consulta DNS](https://tools.delzo.cloud/dns-lookup)
+- [Propagación DNS](https://tools.delzo.cloud/dns-propagation)
+- [Buscador de subdominios](https://tools.delzo.cloud/subdomain-finder)
+- [Certificados emitidos](https://tools.delzo.cloud/cert-monitor)
+- [Vencimiento de certificados](https://tools.delzo.cloud/cert-expiry)
+- [Ubicación de una IP](https://tools.delzo.cloud/ip-geolocation)
+- [Calculadora CIDR](https://tools.delzo.cloud/cidr-calculator)
+
+## Ayuda profesional
+- [delzo.cloud](https://delzo.cloud): configuramos email profesional, DNS y seguridad para pymes.

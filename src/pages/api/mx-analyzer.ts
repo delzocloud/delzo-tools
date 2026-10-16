@@ -2,31 +2,16 @@ export const prerender = false;
 
 import type { APIRoute } from 'astro';
 import { analyzeMx } from '../../lib/mx-analyzer';
-
-const DOMAIN_RE = /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+import { json, normalizeDomain, publicError } from '../../lib/http';
 
 export const GET: APIRoute = async ({ url }) => {
-  const domain = url.searchParams.get('domain')?.trim().toLowerCase();
-
-  if (!domain) {
-    return json({ error: 'El parámetro "domain" es requerido.' }, 400);
-  }
-
-  if (!DOMAIN_RE.test(domain)) {
-    return json({ error: 'Dominio inválido.' }, 400);
-  }
-
+  const raw = url.searchParams.get('domain');
+  if (!raw?.trim()) return json({ error: 'Ingresá un dominio.' }, 400);
+  const domain = normalizeDomain(raw);
+  if (!domain) return json({ error: 'Ese dominio no parece válido. Ejemplo: tuempresa.com.ar' }, 400);
   try {
-    const report = await analyzeMx(domain);
-    return json(report);
-  } catch (err: any) {
-    return json({ error: err.message || 'Error al analizar MX.' }, 500);
+    return json(await analyzeMx(domain));
+  } catch (err) {
+    return json({ error: publicError(err, 'No pudimos analizar los servidores de correo.') }, 502);
   }
 };
-
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
-}

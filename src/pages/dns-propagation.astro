@@ -3,9 +3,9 @@ import ToolLayout from '../components/ToolLayout.astro';
 ---
 
 <ToolLayout
-  title="DNS Propagation Checker"
+  title="Propagación DNS"
   description="Verificá la propagación DNS de un dominio consultando 6 resolvers públicos en paralelo."
-  heading="DNS Propagation Checker"
+  heading="Propagación DNS"
   subheading="Consultá un dominio contra 6 resolvers DNS públicos para verificar propagación."
 >
   <div slot="form">
@@ -226,7 +226,7 @@ import ToolLayout from '../components/ToolLayout.astro';
 
       // Table
       tbody.innerHTML = data.resolvers.map((r: any) => {
-        const answers = r.answers.length > 0 ? r.answers.map((a: string) => '<code>' + esc(a) + '</code>').join('<br>') : '—';
+        const answers = r.answers.length > 0 ? r.answers.map((a: string) => '<code>' + esc(a) + '</code>').join('<br>') : '-';
         let badge = '';
         if (r.status === 'ok') badge = '<span class="badge badge-pass">✓ OK</span>';
         else if (r.status === 'timeout') badge = '<span class="badge badge-warning">⚠ Timeout</span>';

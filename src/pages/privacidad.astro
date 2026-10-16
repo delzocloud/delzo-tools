@@ -6,7 +6,7 @@ import Footer from '../components/Footer.astro';
 
 <BaseLayout
   title="Política de Privacidad"
-  description="Política de privacidad de tools.delzo.cloud — cómo recopilamos, usamos y protegemos tu información."
+  description="Política de privacidad de tools.delzo.cloud: cómo recopilamos, usamos y protegemos tu información."
 >
   <div class="app-layout">
     <Sidebar />
@@ -24,7 +24,7 @@ import Footer from '../components/Footer.astro';
             <section>
               <h2>1. Quiénes somos</h2>
               <p>
-                Este sitio (<strong>tools.delzo.cloud</strong>) es operado por <strong>Delzo.cloud</strong>,
+                Este sitio (<strong>tools.delzo.cloud</strong>) es operado por <strong>delzo.cloud</strong>,
                 una empresa de servicios de infraestructura cloud y DevOps con base en Tucumán, Argentina.
                 Para cualquier consulta sobre privacidad, podés contactarnos en
                 <a href="mailto:hola@delzo.cloud">hola@delzo.cloud</a>.
@@ -41,7 +41,7 @@ import Footer from '../components/Footer.astro';
               <ul>
                 <li>
                   <strong>Direcciones IP:</strong> Las herramientas pueden procesar IPs que vos ingresás
-                  voluntariamente (por ejemplo, en IP Geolocation o Blacklist Checker) para devolverte
+                  voluntariamente (por ejemplo, en Ubicación de una IP o Listas negras (blacklists)) para devolverte
                   los resultados. Estos datos no se almacenan en nuestros servidores más allá del tiempo
                   necesario para responder la consulta.
                 </li>
@@ -80,11 +80,11 @@ import Footer from '../components/Footer.astro';
                 Para funcionar, nuestras herramientas consultan servicios externos:
               </p>
               <ul>
-                <li><strong>Cloudflare DNS over HTTPS</strong> — resolución de registros DNS</li>
-                <li><strong>crt.sh</strong> — Certificate Transparency logs</li>
-                <li><strong>Resolvers DNS públicos</strong> (Google 8.8.8.8, Cloudflare 1.1.1.1, etc.) — propagación DNS</li>
-                <li><strong>APIs de geolocalización IP</strong> — herramienta de geolocalización</li>
-                <li><strong>DNSBLs públicas</strong> — verificación de listas negras</li>
+                <li><strong>Cloudflare DNS over HTTPS</strong>: resolución de registros DNS</li>
+                <li><strong>crt.sh</strong>: Certificate Transparency logs</li>
+                <li><strong>Resolvers DNS públicos</strong> (Google 8.8.8.8, Cloudflare 1.1.1.1, etc.): propagación DNS</li>
+                <li><strong>APIs de geolocalización IP</strong>: herramienta de geolocalización</li>
+                <li><strong>DNSBLs públicas</strong>: verificación de listas negras</li>
               </ul>
               <p>
                 Al usar nuestras herramientas, los dominios e IPs que ingresás son enviados a estos servicios.
@@ -130,7 +130,7 @@ import Footer from '../components/Footer.astro';
               <h2>9. Contacto</h2>
               <p>
                 Para consultas sobre privacidad o protección de datos:<br />
-                <strong>Delzo.cloud</strong><br />
+                <strong>delzo.cloud</strong><br />
                 Tucumán, Argentina<br />
                 <a href="mailto:hola@delzo.cloud">hola@delzo.cloud</a>
               </p>
@@ -243,7 +243,7 @@ import Footer from '../components/Footer.astro';
   }
 
   .legal-body ul li::before {
-    content: '—';
+    content: '-';
     position: absolute;
     left: 0;
     color: var(--turquesa);

@@ -1,0 +1,62 @@
+---
+/**
+ * Call to action shown under a score. Hidden until the page script calls
+ * window.delzoShowCta(tool, domain, grade).
+ */
+interface Props {
+  tool: string;
+}
+const { tool } = Astro.props;
+---
+
+<aside class="lead-cta" id={`lead-cta-${tool}`} data-tool={tool} hidden aria-live="polite">
+  <p class="lead-cta-title"></p>
+  <p class="lead-cta-text">En delzo.cloud lo configuramos por vos: email profesional que no cae en spam, DNS y seguridad de tu sitio.</p>
+  <div class="lead-cta-actions">
+    <a class="btn lead-cta-wa" target="_blank" rel="noopener">Escribinos por WhatsApp</a>
+    <a class="lead-cta-link" target="_blank" rel="noopener">Ver servicios en delzo.cloud</a>
+  </div>
+</aside>
+
+<style>
+  .lead-cta {
+    margin-top: 1.5rem;
+    padding: 1.25rem 1.5rem;
+    border: 1px solid var(--borde);
+    border-left: 4px solid var(--verde);
+    border-radius: 12px;
+    background: var(--blanco);
+    box-shadow: var(--sombra-card);
+  }
+  .lead-cta-title { font-weight: 600; font-size: 1.05rem; color: var(--gris-oscuro); margin-bottom: 0.25rem; }
+  .lead-cta-text { color: var(--gris-medio); font-size: 0.95rem; margin-bottom: 1rem; }
+  .lead-cta-actions { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+  .lead-cta-link { color: var(--verde-dark); font-weight: 500; }
+  @media (max-width: 480px) {
+    .lead-cta-actions { flex-direction: column; align-items: stretch; text-align: center; }
+  }
+</style>
+
+<script>
+  const WA = 'https://wa.me/5493812117551';
+  const SITE = 'https://delzo.cloud/';
+
+  function utm(tool: string, grade: string) {
+    return `utm_source=tools.delzo.cloud&utm_medium=cta&utm_campaign=${encodeURIComponent(tool)}&utm_content=${encodeURIComponent(grade || 'sin-nota')}`;
+  }
+
+  (window as any).delzoShowCta = (tool: string, domain: string, grade: string) => {
+    const box = document.getElementById(`lead-cta-${tool}`);
+    if (!box) return;
+    const good = grade === 'A+' || grade === 'A';
+    box.querySelector('.lead-cta-title')!.textContent = good
+      ? `${domain} está bien. Si querés mantenerlo así o mejorar otras cosas, te ayudamos.`
+      : `${domain} tiene cosas para mejorar (nota ${grade}). Te ayudamos a resolverlas.`;
+    const msg = `Hola, revisé ${domain} en tools.delzo.cloud (${tool}, nota ${grade}) y quiero ayuda para mejorarlo.`;
+    const wa = box.querySelector('.lead-cta-wa') as HTMLAnchorElement;
+    wa.href = `${WA}?text=${encodeURIComponent(msg)}`;
+    const link = box.querySelector('.lead-cta-link') as HTMLAnchorElement;
+    link.href = `${SITE}?${utm(tool, grade)}`;
+    box.hidden = false;
+  };
+</script>

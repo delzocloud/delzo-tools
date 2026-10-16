@@ -279,6 +279,11 @@ label {
   color: #DC2626;
 }
 
+.badge-error {
+  background: rgba(107, 114, 128, 0.12);
+  color: #374151;
+}
+
 /* === Loading === */
 .loading {
   display: none;

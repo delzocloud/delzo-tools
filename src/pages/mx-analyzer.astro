@@ -3,9 +3,9 @@ import ToolLayout from '../components/ToolLayout.astro';
 ---
 
 <ToolLayout
-  title="MX Routing Analyzer"
+  title="Servidores de correo (MX)"
   description="Analizá los registros MX de un dominio: prioridades, proveedor, redundancia e IPs."
-  heading="MX Routing Analyzer"
+  heading="Servidores de correo (MX)"
   subheading="Analizá los servidores MX de un dominio, detectá el proveedor y evaluá la redundancia."
 >
   <div slot="form">
@@ -225,7 +225,12 @@ import ToolLayout from '../components/ToolLayout.astro';
   const PROVIDER_DOMAINS: Record<string, string> = {
     'Google Workspace': 'google.com',
     'Microsoft 365': 'microsoft.com',
-    'Cloudflare': 'cloudflare.com',
+    'Cloudflare Email Routing': 'cloudflare.com',
+    'DonWeb / Ferozo': 'donweb.com',
+    'Hostinger': 'hostinger.com',
+    'Titan Mail': 'titan.email',
+    'Proton Mail': 'proton.me',
+    'iCloud Mail': 'icloud.com',
     'Zoho Mail': 'zoho.com',
     'Proofpoint': 'proofpoint.com',
     'Mimecast': 'mimecast.com',
@@ -236,7 +241,7 @@ import ToolLayout from '../components/ToolLayout.astro';
   function providerLogo(name: string): string {
     const domain = PROVIDER_DOMAINS[name];
     if (!domain) return '';
-    return `<img src="https://www.google.com/s2/favicons?domain=${domain}&sz=32" class="provider-logo" alt="${name}">`;
+    return `<img src="https://www.google.com/s2/favicons?domain=${domain}&sz=32" class="provider-logo" alt="" loading="lazy">`;
   }
 
   async function check() {
@@ -291,7 +296,7 @@ import ToolLayout from '../components/ToolLayout.astro';
         <tr>
           <td><strong>${r.priority}</strong></td>
           <td><code>${esc(r.hostname)}</code></td>
-          <td>${r.ips.length > 0 ? r.ips.map((ip: string) => '<code>' + esc(ip) + '</code>').join('<br>') : '—'}</td>
+          <td>${r.ips.length > 0 ? r.ips.map((ip: string) => '<code>' + esc(ip) + '</code>').join('<br>') : '-'}</td>
           <td><span class="badge-provider">${providerLogo(r.provider)}${esc(r.provider)}</span></td>
         </tr>
       `).join('');

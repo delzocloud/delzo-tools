@@ -1,9 +1,9 @@
 export const prerender = false;
 
 import type { APIRoute } from 'astro';
+import { json, normalizeDomain, publicError } from '../../lib/http';
 import { fetchCertificates } from '../../lib/cert-checker';
 
-const DOMAIN_RE = /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
 
 export const GET: APIRoute = async ({ url }) => {
   const domainsParam = url.searchParams.get('domains')?.trim();
@@ -23,7 +23,7 @@ export const GET: APIRoute = async ({ url }) => {
   }
 
   for (const d of domains) {
-    if (!DOMAIN_RE.test(d)) {
+    if (!normalizeDomain(d)) {
       return json({ error: `Dominio inválido: ${d}` }, 400);
     }
   }
@@ -72,14 +72,8 @@ export const GET: APIRoute = async ({ url }) => {
     });
 
     return json({ total: domains.length, results });
-  } catch (err: any) {
-    return json({ error: err.message || 'Error al consultar certificados.' }, 500);
+  } catch (err) {
+    return json({ error: publicError(err, 'Error al consultar certificados.') }, 500);
   }
 };
 
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
-}

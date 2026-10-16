@@ -1,12 +1,13 @@
 ---
 import ToolLayout from '../components/ToolLayout.astro';
+import LeadCta from '../components/LeadCta.astro';
 ---
 
 <ToolLayout
-  title="Email Security Grader"
-  description="Analizá SPF, DMARC y DKIM de cualquier dominio. Score de seguridad de 0 a 100 con grado A+ a F."
-  heading="Email Security Grader"
-  subheading="Analizá la autenticación de email (SPF, DMARC, DKIM) y obtené un score de seguridad."
+  title="Revisá si tus mails van a spam (SPF, DMARC, DKIM)"
+  description="Revisá gratis si tu dominio tiene SPF, DMARC y DKIM bien configurados para que tus mails no lleguen a spam ni te suplanten. Nota de A+ a F."
+  heading="Seguridad de tu email"
+  subheading="Revisamos SPF, DMARC y DKIM: las 3 configuraciones que hacen que tus mails lleguen a la bandeja de entrada y que nadie pueda mandar mails haciéndose pasar por vos."
 >
   <div slot="form">
     <div class="form-row">
@@ -22,16 +23,23 @@ import ToolLayout from '../components/ToolLayout.astro';
       </div>
       <button class="btn" id="analyze-btn">Analizar</button>
     </div>
+    <details class="advanced">
+      <summary>Opciones avanzadas</summary>
+      <div class="input-group">
+        <label for="selector-input">Selector DKIM (opcional)</label>
+        <input type="text" id="selector-input" placeholder="por ejemplo: s1" autocomplete="off" spellcheck="false" />
+      </div>
+    </details>
     <div class="loading" id="loading"><div class="spinner"></div> Analizando seguridad de email...</div>
     <div class="error-msg" id="error"></div>
   </div>
 
-  <div slot="results" id="results-container" style="display:none;">
+  <div slot="results" id="results-container" style="display:none;" aria-live="polite">
     <!-- Score banner -->
     <div class="grade-banner" id="grade-banner">
       <div class="grade-badge" id="grade-badge"></div>
       <div class="grade-info">
-        <div class="grade-label">Email Security Score</div>
+        <div class="grade-label">Nota de seguridad del email</div>
         <div class="grade-score" id="grade-score"></div>
         <div class="score-bar"><div class="score-bar-fill" id="score-bar-fill"></div></div>
         <div class="score-breakdown">
@@ -46,7 +54,7 @@ import ToolLayout from '../components/ToolLayout.astro';
       <!-- SPF -->
       <div class="auth-section card">
         <div class="auth-header">
-          <h3>SPF</h3>
+          <h3>SPF <small>quién puede mandar mails con tu dominio</small></h3>
           <span class="badge" id="spf-badge"></span>
         </div>
         <p class="auth-details" id="spf-details"></p>
@@ -66,7 +74,7 @@ import ToolLayout from '../components/ToolLayout.astro';
       <!-- DMARC -->
       <div class="auth-section card">
         <div class="auth-header">
-          <h3>DMARC</h3>
+          <h3>DMARC <small>qué hacer con los mails falsos</small></h3>
           <span class="badge" id="dmarc-badge"></span>
         </div>
         <p class="auth-details" id="dmarc-details"></p>
@@ -86,7 +94,7 @@ import ToolLayout from '../components/ToolLayout.astro';
       <!-- DKIM -->
       <div class="auth-section card">
         <div class="auth-header">
-          <h3>DKIM</h3>
+          <h3>DKIM <small>firma que prueba que el mail es tuyo</small></h3>
           <span class="badge" id="dkim-badge"></span>
         </div>
         <p class="auth-details" id="dkim-details"></p>
@@ -103,10 +111,15 @@ import ToolLayout from '../components/ToolLayout.astro';
         </div>
       </div>
     </div>
+    <LeadCta tool="email-auth" />
   </div>
 </ToolLayout>
 
 <style>
+  .advanced { margin-top: 0.75rem; font-size: 0.9rem; color: var(--gris-medio); }
+  .advanced .input-group { margin-top: 0.5rem; max-width: 280px; }
+  .auth-header h3 small { display: block; font-size: 0.8rem; font-weight: 400; color: var(--gris-medio); }
+
   .form-row {
     display: flex;
     gap: 0.75rem;
@@ -222,7 +235,7 @@ import ToolLayout from '../components/ToolLayout.astro';
     try {
       await navigator.clipboard.writeText(text);
       const originalText = btn.textContent;
-      btn.textContent = 'Copiado!';
+      btn.textContent = 'Copiado';
       btn.classList.add('copied');
       setTimeout(() => {
         btn.textContent = originalText;
@@ -235,7 +248,7 @@ import ToolLayout from '../components/ToolLayout.astro';
 
   function setBadge(id: string, status: string) {
     const badge = document.getElementById(id)!;
-    const labels: Record<string, string> = { pass: '✓ Pass', warning: '⚠ Warning', fail: '✗ Fail' };
+    const labels: Record<string, string> = { pass: '✓ Bien', warning: '⚠ Revisar', fail: '✗ Mal', error: '? No se pudo revisar' };
     badge.textContent = labels[status] || status;
     badge.className = `badge badge-${status}`;
   }
@@ -259,6 +272,7 @@ import ToolLayout from '../components/ToolLayout.astro';
 
   async function analyze() {
     const domain = domainInput.value.trim();
+    const selector = (document.getElementById('selector-input') as HTMLInputElement).value.trim();
 
     error.classList.remove('active');
     container.style.display = 'none';
@@ -272,7 +286,7 @@ import ToolLayout from '../components/ToolLayout.astro';
     }
 
     try {
-      const res = await fetch(`/api/email-auth?domain=${encodeURIComponent(domain)}`);
+      const res = await fetch(`/api/email-auth?domain=${encodeURIComponent(domain)}${selector ? `&selector=${encodeURIComponent(selector)}` : ''}`);
       const data = await res.json();
 
       loading.classList.remove('active');
@@ -325,6 +339,7 @@ import ToolLayout from '../components/ToolLayout.astro';
       }
 
       container.style.display = 'block';
+      (window as any).delzoShowCta?.('email-auth', data.domain, data.score.grade.grade);
     } catch {
       loading.classList.remove('active');
       error.textContent = 'Error de conexión. Intentá de nuevo.';
