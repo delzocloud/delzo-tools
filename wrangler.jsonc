@@ -1,9 +1,10 @@
 {
   // account_id via env var: CLOUDFLARE_ACCOUNT_ID
   "name": "delzo-tools",
-  "compatibility_date": "2025-01-01",
+  "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "dist/_worker.js",
+  // Astro 6+ adapter entrypoint (was dist/_worker.js on adapter v12).
+  "main": "@astrojs/cloudflare/entrypoints/server",
   "assets": {
     "directory": "dist",
     "binding": "ASSETS"

@@ -11,13 +11,22 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "12.6.13",
+    "@astrojs/cloudflare": "14.4.2",
     "@astrojs/sitemap": "3.7.4",
-    "astro": "5.18.2",
+    "astro": "7.4.2",
     "jspdf": "4.2.1",
     "jspdf-autotable": "5.0.9"
   },
   "devDependencies": {
-    "vitest": "3.2.7"
+    "vitest": "4.1.12",
+    "wrangler": "4.151.3"
+  },
+  "engines": {
+    "node": ">=22.23.4"
+  },
+  "overrides": {
+    "miniflare": {
+      "undici": "7.30.1"
+    }
   }
 }
