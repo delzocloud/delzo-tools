@@ -11,7 +11,7 @@ export default defineConfig({
   site: 'https://tools.delzo.cloud',
   env: {
     schema: {
-      // Worker secret: `npx wrangler secret put IPGEOLOCATION_API_KEY`. Local: .dev.vars.
+      // Worker secret, uploaded by CI from the GitHub secret of the same name. Local: .dev.vars.
       // Optional: without it /api/geoip falls back to ipwho.is.
       IPGEOLOCATION_API_KEY: envField.string({ context: 'server', access: 'secret', optional: true }),
     },

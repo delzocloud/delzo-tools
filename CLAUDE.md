@@ -116,7 +116,7 @@ Cloudflare Dashboard setup:
 ## External Dependencies
 
 - **Cloudflare DoH** (`cloudflare-dns.com/dns-query`) — DNS queries via HTTPS, JSON format
-- **ipgeolocation.io** — IP geolocation for `/api/geoip?ip=`. Free plan with key in the Worker secret `IPGEOLOCATION_API_KEY` (`npx wrangler secret put IPGEOLOCATION_API_KEY`; locally in `.dev.vars`, gitignored)
+- **ipgeolocation.io** — IP geolocation for `/api/geoip?ip=`. Free plan with key in the GitHub secret `IPGEOLOCATION_API_KEY`; the deploy jobs upload it as a Worker secret via `scripts/write-worker-secrets.mjs` + `--secrets-file`. Locally: `.dev.vars` (gitignored). New Worker secrets go in that script's `NAMES` list and in the `env:` of the deploy steps
 - **ipwho.is** — Keyless fallback. Don't rely on it in production: its quota is per source IP and Cloudflare's shared egress IPs exhaust it (HTTP 429)
 - **Leaflet.js** (CDN) + OpenStreetMap tiles — Map rendering, loaded in `ip-geolocation.astro` head
 - **Google Fonts** — Inter + JetBrains Mono

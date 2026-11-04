@@ -33,7 +33,8 @@ type Route = { status: number; body?: unknown } | 'throw';
 function fakeFetch(routes: { ipgeo?: Route; whois?: Route }, calls: string[] = []): Fetcher {
   return async (input) => {
     calls.push(input);
-    const route = input.includes('ipgeolocation.io') ? routes.ipgeo : routes.whois;
+    const host = new URL(input).hostname;
+    const route = host === 'api.ipgeolocation.io' ? routes.ipgeo : host === 'ipwho.is' ? routes.whois : undefined;
     if (!route) throw new Error(`unexpected fetch ${input}`);
     if (route === 'throw') throw new TypeError('network down');
     return new Response(route.body === undefined ? '' : JSON.stringify(route.body), { status: route.status });
