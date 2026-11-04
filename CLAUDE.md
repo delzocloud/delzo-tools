@@ -82,7 +82,7 @@ All return JSON. Errors in Spanish. Validated server-side.
 |-------|--------|--------|---------|
 | `/api/dns` | GET | `domain` (required), `type` (default: A) | Cloudflare DoH (`cloudflare-dns.com/dns-query`) |
 | `/api/email-auth` | GET | `domain` (required) | 3 DoH lookups (SPF + DMARC + DKIM selectors in parallel) |
-| `/api/geoip` | GET | `ip` (optional — omit to detect visitor IP) | `ip-api.com` (HTTP, free tier) |
+| `/api/geoip` | GET | `ip` (optional — omit to detect visitor IP) | Visitor: Cloudflare `request.cf`. Other IPs: ipgeolocation.io, ipwho.is as fallback (`src/lib/geoip.ts`), cached 24 h per IP |
 
 ## Brand & UI Rules
 
@@ -113,10 +113,11 @@ Cloudflare Dashboard setup:
 2. DNS of `delzo.cloud` → CNAME `tools` → Worker
 3. Workers → Custom domains → `tools.delzo.cloud`
 
-## External Dependencies (no API keys needed)
+## External Dependencies
 
 - **Cloudflare DoH** (`cloudflare-dns.com/dns-query`) — DNS queries via HTTPS, JSON format
-- **ip-api.com** — Free IP geolocation (HTTP only on free tier, 45 req/min limit)
+- **ipgeolocation.io** — IP geolocation for `/api/geoip?ip=`. Free plan with key in the GitHub secret `IPGEOLOCATION_API_KEY`; the deploy jobs upload it as a Worker secret via `scripts/write-worker-secrets.mjs` + `--secrets-file`. Locally: `.dev.vars` (gitignored). New Worker secrets go in that script's `NAMES` list and in the `env:` of the deploy steps
+- **ipwho.is** — Keyless fallback. Don't rely on it in production: its quota is per source IP and Cloudflare's shared egress IPs exhaust it (HTTP 429)
 - **Leaflet.js** (CDN) + OpenStreetMap tiles — Map rendering, loaded in `ip-geolocation.astro` head
 - **Google Fonts** — Inter + JetBrains Mono
 

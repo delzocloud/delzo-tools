@@ -1,4 +1,4 @@
-import { defineConfig } from 'astro/config';
+import { defineConfig, envField } from 'astro/config';
 import cloudflare from '@astrojs/cloudflare';
 import sitemap from '@astrojs/sitemap';
 
@@ -9,6 +9,13 @@ export default defineConfig({
   adapter: cloudflare({ imageService: 'passthrough' }),
   session: false,
   site: 'https://tools.delzo.cloud',
+  env: {
+    schema: {
+      // Worker secret, uploaded by CI from the GitHub secret of the same name. Local: .dev.vars.
+      // Optional: without it /api/geoip falls back to ipwho.is.
+      IPGEOLOCATION_API_KEY: envField.string({ context: 'server', access: 'secret', optional: true }),
+    },
+  },
   // One URL per page, without trailing slash (/email-auth, not /email-auth/).
   trailingSlash: 'never',
   build: { format: 'file' },
