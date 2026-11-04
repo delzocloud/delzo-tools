@@ -1,4 +1,4 @@
-name: Deploy to Cloudflare Workers
+name: CI and deploy
 
 on:
   push:
@@ -6,19 +6,96 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, closed]
 
+# Every job declares the minimum it needs.
+permissions: {}
+
+# One run per PR (or per main push) at a time; never cancel a deploy halfway.
+concurrency:
+  group: deploy-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  preview:
+  # Gate for every deploy: nothing reaches a preview or production unless this passes.
+  checks:
+    if: github.event_name == 'push' || github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # Install scripts are disabled in .npmrc (ignore-scripts=true).
+      - run: npm ci
+
+      # Every package must come from the npm registry with a valid signature.
+      - name: Verify registry signatures
+        run: npm audit signatures
+
+      # Blocks on high/critical advisories. Moderate/low show up in the log only.
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+
+      - run: npm test
+
+      - run: npm run build
+
+  # Static analysis of the workflows themselves (template injection, excessive
+  # permissions, unpinned actions, credential persistence...).
+  workflow-lint:
+    if: github.event_name == 'push' || github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: zizmorcore/zizmor-action@85b2b9fb8e3325e7a23d7d0a9d7ba5ae0f999e3e # v0.7.1
+        with:
+          # Plain mode: fails the job on findings instead of uploading SARIF.
+          advanced-security: false
+
+  # Flags new dependencies with known vulnerabilities or disallowed licenses.
+  dependency-review:
     if: github.event_name == 'pull_request' && github.event.action != 'closed'
     runs-on: ubuntu-latest
     permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+          deny-licenses: AGPL-3.0, GPL-3.0
+
+  preview:
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    needs: [checks, workflow-lint, dependency-review]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: 22
-          cache: npm
+          persist-credentials: false
+
+      # No dependency cache in jobs that hold deploy secrets (cache poisoning).
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
 
       - run: npm ci
 
@@ -37,12 +114,13 @@ jobs:
         # `wrangler preview` creates/updates a Preview under the existing
         # delzo-tools Worker. Routes and custom domains only apply to production,
         # so tools.delzo.cloud is never modified here. Needs Wrangler >= 4.135.
+        # Wrangler is the version pinned in package.json (no npx downloads).
         run: |
           set -euo pipefail
-          npx -y wrangler@${WRANGLER_PREVIEW_VERSION} preview \
+          npx wrangler preview \
             --worker-name delzo-tools \
-            --name "${{ steps.slug.outputs.branch_slug }}" \
-            --message "PR #${{ github.event.pull_request.number }} ${GITHUB_SHA::7}" \
+            --name "$PREVIEW_NAME" \
+            --message "PR #${PR_NUMBER} ${GITHUB_SHA::7}" \
             --json > preview.out
           cat preview.out
           node -e '
@@ -61,12 +139,13 @@ jobs:
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `url=${url}\nunique_url=${unique}\n`);
           '
         env:
-          WRANGLER_PREVIEW_VERSION: 4.151.1
+          PREVIEW_NAME: ${{ steps.slug.outputs.branch_slug }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Comment PR with preview URL
-        uses: actions/github-script@v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           PREVIEW_URL: ${{ steps.preview.outputs.url }}
           UNIQUE_URL: ${{ steps.preview.outputs.unique_url }}
@@ -111,19 +190,26 @@ jobs:
 
   production:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [checks, workflow-lint]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: 22
-          cache: npm
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
 
       - run: npm ci
 
       - run: npm run build
 
+      # Wrangler is the version pinned in package.json (before this it was
+      # whatever `npx` downloaded as latest on every deploy).
       - name: Deploy to production
         run: npx wrangler deploy
         env:
@@ -133,12 +219,17 @@ jobs:
   cleanup:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: 22
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
 
       - run: npm ci
 
@@ -154,11 +245,11 @@ jobs:
         continue-on-error: true
         # Deletes only this PR's Preview (and its deployments), never the Worker.
         run: |
-          npx -y wrangler@${WRANGLER_PREVIEW_VERSION} preview delete \
+          npx wrangler preview delete \
             --worker-name delzo-tools \
-            --name "${{ steps.slug.outputs.branch_slug }}" \
+            --name "$PREVIEW_NAME" \
             --skip-confirmation
         env:
-          WRANGLER_PREVIEW_VERSION: 4.151.1
+          PREVIEW_NAME: ${{ steps.slug.outputs.branch_slug }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

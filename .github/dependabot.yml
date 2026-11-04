@@ -1,0 +1,39 @@
+# Conservative update policy (see SECURITY.md):
+# - Nothing is proposed until it has been published for a while (cooldown).
+# - Minor and patch updates arrive grouped in one weekly PR.
+# - Majors arrive one per PR after 60 days, to be migrated on purpose.
+# - Security updates ignore the cooldown and open as soon as an advisory exists
+#   (needs "Dependabot security updates" enabled in the repo settings).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Argentina/Tucuman
+    cooldown:
+      default-days: 14
+      semver-major-days: 60
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: deps
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Argentina/Tucuman
+    cooldown:
+      default-days: 14
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: ci

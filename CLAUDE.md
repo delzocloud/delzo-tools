@@ -8,8 +8,9 @@ Free networking tools site for **delzo.cloud** ("engineering as marketing"). Att
 
 ## Stack
 
-- **Astro 5** (static output + server endpoints) — `astro.config.mjs`
-- **Cloudflare Workers** via `@astrojs/cloudflare` adapter — `wrangler.jsonc`
+- **Astro 7** (static output + server endpoints) — `astro.config.mjs`
+- **Cloudflare Workers** via `@astrojs/cloudflare` v14 adapter — `wrangler.jsonc`. Build output: `dist/client` (static assets) + `dist/server` (Worker + generated `wrangler.json`, which `wrangler deploy` picks up automatically)
+- **Node 24** (`.nvmrc`)
 - **No JS frameworks** — vanilla JS in `<script>` tags, Astro components for HTML
 
 ## Commands
@@ -19,6 +20,7 @@ npm run dev       # Local dev server (http://localhost:4321)
 npm run build     # Production build → dist/
 npm run preview   # Preview production build locally
 npm run deploy    # astro build && wrangler deploy
+npm test          # vitest
 ```
 
 After modifying `astro.config.mjs` or adding integrations, restart dev server.
@@ -55,10 +57,22 @@ src/
 ### Key patterns
 
 - **Pages are prerendered** (static HTML) by default. API endpoints opt out with `export const prerender = false;`
-- **CSS imported in frontmatter** (`import '../styles/global.css'` in BaseLayout) — NOT in `<style>` blocks. This is the correct Astro 5/Vite 6 pattern.
+- **CSS imported in frontmatter** (`import '../styles/global.css'` in BaseLayout) — NOT in `<style>` blocks. This is the correct Astro/Vite pattern.
 - **Client-side JS** lives in `<script>` tags inside `.astro` pages. Astro bundles and deduplicates these automatically. Use `<script is:inline>` only when referencing external globals (e.g. Leaflet's `L`).
 - **Named slots** for ToolLayout: `form`, `results`, `head`. Example: `<div slot="form">...</div>`
 - **No client-side framework** — all interactivity is vanilla JS calling `/api/*` endpoints via `fetch()`.
+
+## Dependencies and security
+
+**Read `SECURITY.md` before touching `package.json`, `.npmrc` or the workflows.** Short version:
+
+- Only versions published **14+ days ago** (`.npmrc` `min-release-age=14`). Exact pins, no `^`.
+- Install scripts are disabled (`ignore-scripts=true`). The build does not need them.
+- Wrangler is a pinned devDependency. Never use `npx wrangler@x` or an unpinned `npx` download in CI.
+- Majors are migrated on purpose, one per PR, but never more than one major behind.
+- CI (`checks`, `workflow-lint`, `dependency-review`) must pass before any preview or production deploy.
+- Actions are pinned to a full SHA with `# vX.Y.Z`. Every job sets its own `permissions` and checks out with `persist-credentials: false`.
+- `astro.config.mjs` sets `session: false` and `imageService: 'passthrough'` so the adapter doesn't inject SESSION KV / IMAGES bindings that wrangler would auto-provision. Turn them on only if you start using sessions or `astro:assets`.
 
 ## API Endpoints
 
