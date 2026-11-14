@@ -80,7 +80,11 @@ jobs:
           deny-licenses: AGPL-3.0, GPL-3.0
 
   preview:
-    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    # Runs triggered by Dependabot get no Actions secrets, so the deploy can only
+    # fail. Skip them; for a major, push a commit to the branch to get a preview.
+    if: >-
+      github.event_name == 'pull_request' && github.event.action != 'closed'
+      && github.actor != 'dependabot[bot]'
     needs: [checks, workflow-lint, dependency-review]
     runs-on: ubuntu-latest
     permissions:
@@ -230,7 +234,9 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
   cleanup:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    if: >-
+      github.event_name == 'pull_request' && github.event.action == 'closed'
+      && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: read

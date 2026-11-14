@@ -14,7 +14,7 @@ regressions show up in the first patch releases. So:
 |---|---|---|
 | Any new version | Must have been published at least **14 days** ago | `.npmrc` (`min-release-age=14`) and Dependabot `cooldown` |
 | Minor and patch | One grouped Dependabot PR per week | `.github/dependabot.yml` |
-| Major | Separate PR, only after **60 days**. Read the upgrade guide, test the preview, then merge | `.github/dependabot.yml` |
+| Major | Separate PR, only after **60 days**. Read the upgrade guide, test the preview, then merge. Dependabot runs get no secrets, so no preview is deployed on their own; push a commit to the branch to get one | `.github/dependabot.yml` |
 | Security fix | Skips the cooldown. Dependabot security updates open a PR as soon as there is an advisory | Repo setting "Dependabot security updates" |
 | Exact pins | `package.json` uses exact versions, no `^` ranges | `.npmrc` (`save-exact=true`) |
 | Install scripts | Never run (`postinstall` and friends) | `.npmrc` (`ignore-scripts=true`) |
